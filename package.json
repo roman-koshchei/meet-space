@@ -32,7 +32,10 @@
 		"vite": "^6.2.5"
 	},
 	"dependencies": {
+		"@hono/zod-validator": "^0.4.3",
 		"@libsql/client": "^0.14.0",
-		"drizzle-orm": "^0.40.0"
+		"drizzle-orm": "^0.40.0",
+		"hono": "^4.7.7",
+		"zod": "^3.24.2"
 	}
 }
