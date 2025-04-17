@@ -1,8 +1,13 @@
-import { WebSocket } from 'ws';
+import type { WebSocket } from 'ws';
+
+export interface Participant {
+    id: string;
+    ws: WebSocket;
+}
 
 export interface Room {
     id: string;
-    participants: Map<string, WebSocket>;
+    participants: Participant[];
 }
 
 export class RoomService {
@@ -12,7 +17,7 @@ export class RoomService {
         const id = Math.random().toString(36).substring(2, 8);
         const room: Room = {
             id,
-            participants: new Map()
+            participants: []
         };
         this.rooms.set(id, room);
         return room;
@@ -26,7 +31,15 @@ export class RoomService {
         const room = this.rooms.get(roomId);
         if (!room) return false;
         
-        room.participants.set(userId, ws);
+        // Check if participant already exists
+        const existingIndex = room.participants.findIndex(p => p.id === userId);
+        if (existingIndex !== -1) {
+            // Update existing participant's WebSocket
+            room.participants[existingIndex].ws = ws;
+        } else {
+            // Add new participant
+            room.participants.push({ id: userId, ws });
+        }
         return true;
     }
 
@@ -34,10 +47,10 @@ export class RoomService {
         const room = this.rooms.get(roomId);
         if (!room) return;
         
-        room.participants.delete(userId);
+        room.participants = room.participants.filter(p => p.id !== userId);
         
         // Clean up empty rooms
-        if (room.participants.size === 0) {
+        if (room.participants.length === 0) {
             this.rooms.delete(roomId);
         }
     }
