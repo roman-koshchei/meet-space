@@ -6,7 +6,7 @@
 	<div class="grid min-h-[calc(100vh-5rem)] grid-cols-1 items-center gap-8 md:grid-cols-2">
 		<!-- Hero Content -->
 		<div class="flex flex-col text-left">
-			<h1 class="text-5xl leading-tight font-bold md:text-6xl">
+			<h1 class=" flex flex-wrap text-5xl leading-18 font-bold md:text-6xl">
 				{#each 'Welcome to'.split(' ') as word, index}
 					<div
 						style={`--delay: ${index * 0.05 + 0.2}s`}
@@ -58,7 +58,7 @@
 		<div class="motion-preset-focus-sm motion-delay-[0.5s] hidden md:block">
 			<div class="relative">
 				<div
-					class="absolute -top-10 -left-10 h-24 w-24 rounded-full bg-green-100 opacity-70 blur-xl"
+					class="absolute -top-24 -left-24 size-100 rounded-full bg-green-100 opacity-70 blur-xl"
 				></div>
 				<div
 					class="absolute -right-10 -bottom-10 h-32 w-32 rounded-full bg-blue-100 opacity-70 blur-xl"
