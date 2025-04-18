@@ -41,6 +41,7 @@
 		"@libsql/client": "^0.14.0",
 		"drizzle-orm": "^0.40.0",
 		"hono": "^4.7.7",
+		"lucide-svelte": "^0.488.0",
 		"shadcn-svelte": "^0.14.1",
 		"tailwindcss": "^4.1.4",
 		"tailwindcss-motion": "^1.1.0",
