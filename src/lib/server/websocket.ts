@@ -1,10 +1,9 @@
-import { Hono } from 'hono';
-import { createBunWebSocket } from 'hono/bun';
 import { roomService } from './services/room-service';
 import type { WebSocket as WS } from 'ws';
 import { z } from 'zod';
+import { router } from './api';
+import type { Context } from 'hono';
 
-// Message schemas
 const joinMessageSchema = z.object({
     type: z.literal('join'),
     roomId: z.string(),
@@ -21,7 +20,6 @@ const wsMessageSchema = z.discriminatedUnion('type', [
     chatMessageSchema
 ]);
 
-// Response schemas
 const errorResponseSchema = z.object({
     type: z.literal('error'),
     message: z.string(),
@@ -52,102 +50,102 @@ const sendResponse = (ws: { send: (data: string) => void }, response: WSResponse
     ws.send(JSON.stringify(response));
 };
 
-export const wsApp = new Hono();
 
-const { upgradeWebSocket, websocket } = createBunWebSocket();
-
-wsApp.get('/ws', upgradeWebSocket((c) => {
+router.get('/ws', (c: Context) => {
+    const upgrade = c.req.raw.headers.get('upgrade')?.toLowerCase();
+    if (upgrade !== 'websocket') {
+        return c.text('Expected Upgrade: websocket', 426);
+    }
+    
+    const { response, socket } = c.env.server.upgrade(c.req.raw);
+    
     let currentRoomId: string | null = null;
     let currentUserId: string | null = null;
-
-    return {
-        onMessage(message, ws) {
-            let data: WSMessage;
-            try {
-                const parsed = JSON.parse(message.toString());
-                const result = wsMessageSchema.safeParse(parsed);
-                
-                if (!result.success) {
-                    sendResponse(ws, {
-                        type: 'error',
-                        message: 'Invalid message format',
-                        errors: result.error.errors
-                    });
-                    return;
-                }
-                
-                data = result.data;
-            } catch (error) {
-                sendResponse(ws, {
+    
+    socket.onmessage = (event: MessageEvent) => {
+        let data: WSMessage;
+        try {
+            const parsed = JSON.parse(event.data.toString());
+            const result = wsMessageSchema.safeParse(parsed);
+            
+            if (!result.success) {
+                sendResponse(socket, {
                     type: 'error',
-                    message: 'Failed to parse message',
-                    errors: [error instanceof Error ? error.message : 'Unknown error']
+                    message: 'Invalid message format',
+                    errors: result.error.errors
                 });
                 return;
             }
             
-            switch (data.type) {
-                case 'join': {
-                    currentRoomId = data.roomId;
-                    currentUserId = data.userId;
-                    if (currentRoomId && currentUserId) {
-                        const success = roomService.addParticipant(currentRoomId, currentUserId, ws as unknown as WS);
-                        if (success) {
-                            sendResponse(ws, {
-                                type: 'joined',
-                                roomId: currentRoomId
-                            });
-                        } else {
-                            sendResponse(ws, {
-                                type: 'error',
-                                message: 'Failed to join room'
-                            });
-                        }
-                    }
-                    break;
-                }
-                case 'message': {
-                    if (!currentRoomId) {
-                        sendResponse(ws, {
-                            type: 'error',
-                            message: 'Not joined to any room'
+            data = result.data;
+        } catch (error) {
+            sendResponse(socket, {
+                type: 'error',
+                message: 'Failed to parse message',
+                errors: [error instanceof Error ? error.message : 'Unknown error']
+            });
+            return;
+        }
+        
+        switch (data.type) {
+            case 'join': {
+                currentRoomId = data.roomId;
+                currentUserId = data.userId;
+                if (currentRoomId && currentUserId) {
+                    const success = roomService.addParticipant(currentRoomId, currentUserId, socket as unknown as WS);
+                    if (success) {
+                        sendResponse(socket, {
+                            type: 'joined',
+                            roomId: currentRoomId
                         });
-                        return;
-                    }
-
-                    const room = roomService.getRoom(currentRoomId);
-                    if (!room) {
-                        sendResponse(ws, {
+                    } else {
+                        sendResponse(socket, {
                             type: 'error',
-                            message: 'Room not found'
+                            message: 'Failed to join room'
                         });
-                        return;
                     }
-
-                    const messageResponse: WSResponse = {
-                        type: 'message',
-                        from: currentUserId!,
-                        content: data.content
-                    };
-
-                    room.participants.forEach(participant => {
-                        if (participant.id !== currentUserId) {
-                            sendResponse(participant.ws, messageResponse);
-                        }
-                    });
-                    break;
                 }
+                break;
             }
-        },
-        onClose() {
-            if (currentRoomId && currentUserId) {
-                roomService.removeParticipant(currentRoomId, currentUserId);
+            case 'message': {
+                if (!currentRoomId) {
+                    sendResponse(socket, {
+                        type: 'error',
+                        message: 'Not joined to any room'
+                    });
+                    return;
+                }
+
+                const room = roomService.getRoom(currentRoomId);
+                if (!room) {
+                    sendResponse(socket, {
+                        type: 'error',
+                        message: 'Room not found'
+                    });
+                    return;
+                }
+
+                const messageResponse: WSResponse = {
+                    type: 'message',
+                    from: currentUserId!,
+                    content: data.content
+                };
+
+                room.participants.forEach(participant => {
+                    if (participant.id !== currentUserId) {
+                        sendResponse(participant.ws, messageResponse);
+                    }
+                });
+                break;
             }
         }
     };
-}));
-
-export default {
-    fetch: wsApp.fetch,
-    websocket
-}; 
+    
+    socket.onclose = () => {
+        if (currentRoomId && currentUserId) {
+            roomService.removeParticipant(currentRoomId, currentUserId);
+        }
+    };
+    
+    return response;
+});

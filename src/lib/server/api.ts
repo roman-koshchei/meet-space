@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 import { roomService } from './services/room-service';
 import { z } from 'zod';
-import { validator } from 'hono/validator';
 import { HTTPException } from 'hono/http-exception';
 import { cors } from 'hono/cors';
+import { zValidator } from '@hono/zod-validator';
 
 export const router = new Hono().basePath('/api');
 
@@ -24,18 +24,10 @@ router.onError((err, c) => {
 	return c.json({ error: 'Internal Server Error' }, 500);
 });
 
-const createRoomSchema = z.object({
-	roomId: z.string().optional()
-});
-
 router.post('/room',
-	validator('json', (value, c) => {
-		const parsed = createRoomSchema.safeParse(value);
-		if (!parsed.success) {
-			return c.json({ error: 'Invalid request body' }, 400);
-		}
-		return parsed.data;
-	}),
+	zValidator('json', z.object({
+		roomId: z.string().optional()
+	})),
 	(c) => {
 		const { roomId } = c.req.valid('json');
 		
