@@ -33,14 +33,14 @@ export default function Room() {
             return;
         }
         setUsername(storedUsername);
-    }, [navigate]);
+    }, []);
 
     // Redirect if no roomId is provided
     useEffect(() => {
         if (!roomId) {
             navigate("/");
         }
-    }, [roomId, navigate]);
+    }, [roomId]);
 
     // Set up event handlers and join room when connection is established
     useEffect(() => {
@@ -94,7 +94,7 @@ export default function Room() {
         return () => {
             clearTimeout(timer);
         };
-    }, [isConnected, roomId, setupEventHandler]);
+    }, [isConnected, roomId]);
 
     // Auto-scroll to bottom when messages change
     useEffect(() => {

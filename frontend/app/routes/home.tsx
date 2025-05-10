@@ -25,7 +25,7 @@ export default function Home() {
         setupEventHandler("Connect", (receivedRoomId: string) => {
             navigate(`/room?id=${receivedRoomId}`);
         });
-    }, [isConnected, setupEventHandler, navigate]);
+    }, [isConnected]);
 
     const handleCreateRoom = async () => {
         if (connection && isNameSet) {
@@ -68,7 +68,7 @@ export default function Home() {
         return (
             <div className="flex items-center justify-center h-screen bg-gray-100">
                 <div className="text-center p-6 max-w-sm bg-white rounded-lg shadow-md">
-                    <h1 className="text-xl font-bold mb-4">Connecting to chat server...</h1>
+                    <h1 className="text-xl font-bold mb-4 mt-0 leading-1.5">Connecting to chat server...</h1>
                     <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
                 </div>
             </div>
@@ -79,7 +79,7 @@ export default function Home() {
         return (
             <div className="flex items-center justify-center h-screen bg-gray-100">
                 <div className="p-6 max-w-sm w-full bg-white rounded-lg shadow-md">
-                    <h1 className="text-xl font-bold mb-4 text-center">Welcome to Meet Space</h1>
+                    <h1 className="text-xl font-bold mb-4 text-center mt-0 leading-1.5">Welcome to Meet Space</h1>
                     <div className="flex flex-col">
                         <input
                             type="text"
@@ -105,13 +105,13 @@ export default function Home() {
         <div className="flex items-center justify-center h-screen bg-gray-100">
             <div className="p-6 max-w-md w-full bg-white rounded-lg shadow-md">
                 <div className="mb-4 text-center">
-                    <h1 className="text-xl font-bold">Meet Space</h1>
+                    <h1 className="text-xl font-bold mt-0 leading-1.5">Meet Space</h1>
                     <p className="text-sm text-gray-600">Logged in as: {username}</p>
                 </div>
 
                 <div className="flex flex-col gap-6">
                     <div className="text-center">
-                        <h2 className="font-bold mb-2">Create a New Room</h2>
+                        <h2 className="font-bold mb-2 mt-0 leading-1.5">Create a New Room</h2>
                         <button
                             onClick={handleCreateRoom}
                             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded"
@@ -121,7 +121,7 @@ export default function Home() {
                     </div>
 
                     <div className="text-center">
-                        <h2 className="font-bold mb-2">Join Existing Room</h2>
+                        <h2 className="font-bold mb-2 mt-0 leading-1.5">Join Existing Room</h2>
                         <input
                             type="text"
                             value={joinRoomId}

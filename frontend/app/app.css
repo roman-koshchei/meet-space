@@ -28,21 +28,3 @@ body {
   background-color: var(--color-background);
   line-height: 1.5;
 }
-
-h1, h2, h3, h4, h5, h6 {
-  margin-top: 0;
-  line-height: 1.2;
-}
-
-a {
-  color: #3182ce;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-button, input, textarea {
-  font-family: inherit;
-}
