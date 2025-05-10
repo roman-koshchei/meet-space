@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import * as SignalR from "@microsoft/signalr";
 import { useNavigate } from "react-router";
+import { useSignalR } from "~/context/ConnectionContext";
 import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {
@@ -10,74 +10,22 @@ export function meta({}: Route.MetaArgs) {
     ];
 }
 
-let connection: SignalR.HubConnection | null = null;
-
 export default function Home() {
-    const [isConnected, setIsConnected] = useState(false);
+    const { connection, isConnected, setupEventHandler } = useSignalR();
     const [username, setUsername] = useState("");
     const [isNameSet, setIsNameSet] = useState(false);
     const [joinRoomId, setJoinRoomId] = useState("");
     const navigate = useNavigate();
 
-    // Initialize the SignalR connection
+    // Set up event handlers
     useEffect(() => {
-        const ensureConnection = async () => {
-            try {
-                if (!connection) {
-                    connection = new SignalR.HubConnectionBuilder()
-                        .withUrl("http://localhost:32778/hub")
-                        .withAutomaticReconnect({
-                            nextRetryDelayInMilliseconds: retryContext => {
-                                // Implement a shorter delay for first few retries
-                                if (retryContext.previousRetryCount < 3) {
-                                    return 1000; // 1 second
-                                } else {
-                                    return 3000; // 3 seconds
-                                }
-                            }
-                        })
-                        .build();
+        if (!isConnected) return;
 
-                    // Set up global event handlers before starting the connection
-                    setupEventHandlers();
-
-                    await connection.start();
-                    console.log("Connected to SignalR hub!");
-                    setIsConnected(true);
-                } else if (connection.state === SignalR.HubConnectionState.Disconnected) {
-                    // Set up handlers again in case they were lost
-                    setupEventHandlers();
-
-                    await connection.start();
-                    console.log("Reconnected to SignalR hub!");
-                    setIsConnected(true);
-                } else {
-                    // Connection exists and not in Disconnected state
-                    setIsConnected(true);
-                    // Refresh handlers just to be sure
-                    setupEventHandlers();
-                }
-            } catch (err) {
-                console.error("Error with SignalR connection:", err);
-            }
-        };
-
-        ensureConnection();
-
-        return () => {
-            // We don't stop the connection on unmount as we want to persist it
-            // across navigation to the room page
-        };
-    }, []);
-
-    const setupEventHandlers = () => {
-        if (!connection) return;
-
-        // When a room is created, navigate to that room
-        connection.on("Connect", (receivedRoomId: string) => {
+        // Set up the event handler for room creation
+        setupEventHandler("Connect", (receivedRoomId: string) => {
             navigate(`/room?id=${receivedRoomId}`);
         });
-    };
+    }, [isConnected, setupEventHandler, navigate]);
 
     const handleCreateRoom = async () => {
         if (connection && isNameSet) {

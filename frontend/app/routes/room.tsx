@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import * as SignalR from "@microsoft/signalr";
 import { useSearchParams, useNavigate } from "react-router";
+import { useSignalR } from "~/context/ConnectionContext";
 import type { Route } from "./+types/room";
 
 export function meta({}: Route.MetaArgs) {
@@ -10,10 +10,8 @@ export function meta({}: Route.MetaArgs) {
     ];
 }
 
-// Store the connection as a module-level variable for persistence
-let connection: SignalR.HubConnection | null = null;
-
 export default function Room() {
+    const { connection, isConnected, setupEventHandler } = useSignalR();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const roomId = searchParams.get("id");
@@ -23,7 +21,6 @@ export default function Room() {
         isSystem: boolean;
     }>>([]);
     const [newMessage, setNewMessage] = useState("");
-    const [isConnected, setIsConnected] = useState(false);
     const [username, setUsername] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -38,86 +35,23 @@ export default function Room() {
         setUsername(storedUsername);
     }, [navigate]);
 
-    // Initialize the SignalR connection
+    // Redirect if no roomId is provided
     useEffect(() => {
         if (!roomId) {
             navigate("/");
-            return;
         }
-
-        const ensureConnection = async () => {
-            try {
-                if (!connection) {
-                    connection = new SignalR.HubConnectionBuilder()
-                        .withUrl("http://localhost:32778/hub")
-                        .withAutomaticReconnect()
-                        .build();
-
-                    // Set up event handlers before starting the connection
-                    setupEventHandlers();
-
-                    await connection.start();
-                    console.log("Connected to SignalR hub!");
-                    setIsConnected(true);
-
-                    // Only join room after confirmed connection
-                    await new Promise(resolve => setTimeout(resolve, 500)); // Small delay to ensure connection is ready
-                    await joinRoom();
-                } else if (connection.state === SignalR.HubConnectionState.Disconnected) {
-                    // Set up event handlers before starting the connection
-                    setupEventHandlers();
-
-                    await connection.start();
-                    console.log("Reconnected to SignalR hub!");
-                    setIsConnected(true);
-
-                    // Only join room after confirmed connection
-                    await new Promise(resolve => setTimeout(resolve, 500)); // Small delay to ensure connection is ready
-                    await joinRoom();
-                } else {
-                    setIsConnected(true);
-                    setupEventHandlers();
-
-                    // If connection is already established, ensure we're in Connected state
-                    if (connection.state === SignalR.HubConnectionState.Connected) {
-                        await joinRoom();
-                    } else {
-                        console.log("Waiting for connection to be in Connected state...");
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                        await joinRoom();
-                    }
-                }
-            } catch (err) {
-                console.error("Error with SignalR connection:", err);
-                setMessages(prev => [...prev, {
-                    text: `Connection error: ${err}`,
-                    isSystem: true
-                }]);
-            }
-        };
-
-        ensureConnection();
-
-        return () => {
-            // We don't stop the connection on unmount as we want to persist it
-            // if user navigates back to home
-        };
     }, [roomId, navigate]);
 
-    const setupEventHandlers = () => {
-        if (!connection) return;
-
-        // Remove any existing handlers to prevent duplicates
-        connection.off("NewUserInRoom");
-        connection.off("ReceiveMessage");
-        connection.off("GlobalReceiveMessage");
+    // Set up event handlers and join room when connection is established
+    useEffect(() => {
+        if (!isConnected || !roomId) return;
 
         // Set up event handlers
-        connection.on("NewUserInRoom", () => {
+        setupEventHandler("NewUserInRoom", () => {
             setMessages(prev => [...prev, { text: "A new user has joined the room!", isSystem: true }]);
         });
 
-        connection.on("ReceiveMessage", (receivedMessage: string) => {
+        setupEventHandler("ReceiveMessage", (receivedMessage: string) => {
             try {
                 const parsedMessage = JSON.parse(receivedMessage);
                 setMessages(prev => [...prev, {
@@ -131,38 +65,36 @@ export default function Room() {
             }
         });
 
-        // Also handle global messages
-        connection.on("GlobalReceiveMessage", (message: string) => {
+        setupEventHandler("GlobalReceiveMessage", (message: string) => {
             setMessages(prev => [...prev, { text: message, isSystem: true }]);
         });
-    };
 
-    const joinRoom = async () => {
-        if (!connection || !roomId) return;
+        // Join the room
+        const joinRoom = async () => {
+            if (!connection) return;
 
-        // Check if connection is ready
-        if (connection.state !== SignalR.HubConnectionState.Connected) {
-            console.log(`Connection not ready. Current state: ${connection.state}`);
-            setMessages(prev => [...prev, {
-                text: `Waiting for connection to be ready. Current state: ${connection?.state}`,
-                isSystem: true
-            }]);
-            return;
-        }
+            try {
+                console.log("Attempting to join room:", roomId);
+                await connection.invoke("ConnectToRoom", roomId);
+                setMessages(prev => [...prev, { text: `Joined room: ${roomId}`, isSystem: true }]);
+            } catch (err) {
+                console.error("Error joining room:", err);
+                setMessages(prev => [...prev, {
+                    text: `Error joining room: ${err}`,
+                    isSystem: true
+                }]);
+            }
+        };
 
-        try {
-            console.log("Attempting to join room:", roomId);
-            // Try to join the room
-            await connection.invoke("ConnectToRoom", roomId);
-            setMessages(prev => [...prev, { text: `Joined room: ${roomId}`, isSystem: true }]);
-        } catch (err) {
-            console.error("Error joining room:", err);
-            setMessages(prev => [...prev, {
-                text: `Error joining room: ${err}`,
-                isSystem: true
-            }]);
-        }
-    };
+        // Small delay to ensure connection is ready
+        const timer = setTimeout(() => {
+            joinRoom();
+        }, 500);
+
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [isConnected, roomId, setupEventHandler]);
 
     // Auto-scroll to bottom when messages change
     useEffect(() => {
