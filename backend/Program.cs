@@ -38,6 +38,6 @@ app.UseCors();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<ChatHub>("/hub");
+app.MapHub<MeetingHub>("/meeting-hub");
 
 app.Run();

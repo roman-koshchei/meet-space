@@ -44,7 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-      <SignalRProvider hubUrl="http://localhost:32780/hub">
+      <SignalRProvider hubUrl="https://localhost:7153/meeting-hub">
         <Outlet />
       </SignalRProvider>
   );
