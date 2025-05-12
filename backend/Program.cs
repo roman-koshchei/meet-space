@@ -1,3 +1,4 @@
+using Backend.Data;
 using Backend.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,8 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
+
+builder.Services.AddSingleton<MeetingHubData>();
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
@@ -38,6 +41,6 @@ app.UseCors();
 app.UseAuthorization();
 
 app.MapControllers();
-app.MapHub<MeetingHub>("/meeting-hub");
+app.MapHub<MeetingHub>("/hub");
 
 app.Run();

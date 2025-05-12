@@ -1,8 +1,10 @@
-﻿namespace Backend.Data;
+﻿using System.Collections.Concurrent;
 
-public static class MeetingHubData
+namespace Backend.Data;
+
+public class MeetingHubData
 {
-    public static IDictionary<string, (string meetingId, string userId)> Connections { get; set; } = new Dictionary<string, (string, string)>();
+    public ConcurrentDictionary<string, (string meetingId, string userId)> Connections { get; set; } = new();
 
-    public static IDictionary<string, (string meetingId, string connectionId)> Users { get; set; } = new Dictionary<string, (string, string)>();
+    public ConcurrentDictionary<string, (string meetingId, string connectionId)> Users { get; set; } = new();
 }

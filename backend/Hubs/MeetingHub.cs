@@ -6,17 +6,24 @@ namespace Backend.Hubs;
 
 public class MeetingHub : Hub
 {
+    private readonly MeetingHubData _meetingHubData;
+    
+    public MeetingHub(MeetingHubData meetingHubData)
+    {
+        _meetingHubData = meetingHubData;
+    }
+    
     // SDP - audio/video
     public async Task<List<string>> UserJoining(string userId, string meetingId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, meetingId);
 
-        MeetingHubData.Connections[Context.ConnectionId] = (meetingId, userId);
-        MeetingHubData.Users[userId] = (meetingId, Context.ConnectionId);
+        _meetingHubData.Connections[Context.ConnectionId] = (meetingId, userId);
+        _meetingHubData.Users[userId] = (meetingId, Context.ConnectionId);
 
         await Clients.OthersInGroup(meetingId).SendAsync("AnotherUserJoined", userId);
 
-        return MeetingHubData.Connections.Values
+        return _meetingHubData.Connections.Values
             .Where(t => t.meetingId == meetingId && t.userId != userId)
             .Select(t => t.userId)
             .ToList();
@@ -24,9 +31,9 @@ public class MeetingHub : Hub
     
     public async Task SdpProcess(string toUserId, SdpDataModel sdpData)
     {
-        var fromUserId = MeetingHubData.Connections[Context.ConnectionId].userId;
-        var toConnection = MeetingHubData.Users[toUserId].connectionId;
-
+        var fromUserId = _meetingHubData.Users.FirstOrDefault(x => x.Value.connectionId == Context.ConnectionId).Key;
+        var toConnection = _meetingHubData.Users.FirstOrDefault(x => x.Key == toUserId).Value.connectionId;
+        
         await Clients.Client(toConnection).SendAsync("sdpProcess", fromUserId, sdpData);
     }
     
@@ -60,13 +67,13 @@ public class MeetingHub : Hub
     
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        if (!MeetingHubData.Connections.TryGetValue(Context.ConnectionId, out var data))
+        if (!_meetingHubData.Connections.TryGetValue(Context.ConnectionId, out var data))
             return;
 
         var (meetingId, userId) = data;
 
-        MeetingHubData.Connections.Remove(Context.ConnectionId);
-        MeetingHubData.Users.Remove(userId);
+        _meetingHubData.Connections.TryRemove(Context.ConnectionId, out _);
+        _meetingHubData.Users.TryRemove(userId, out _);
 
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, meetingId);
         await Clients.OthersInGroup(meetingId).SendAsync("UserLeft", userId);
