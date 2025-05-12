@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useSignalR } from "~/context/ConnectionContext";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
+import { Label } from "~/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { VideoIcon, Users, PlusCircle, ArrowRightCircle } from "lucide-react";
 import type { Route } from "./+types/home";
 
 export function meta({}: Route.MetaArgs) {
     return [
         { title: "Meet Space" },
-        { name: "description", content: "Real-time chat with SignalR" },
+        { name: "description", content: "Video meetings and real-time chat with SignalR" },
     ];
 }
 
@@ -15,7 +21,17 @@ export default function Home() {
     const [username, setUsername] = useState("");
     const [isNameSet, setIsNameSet] = useState(false);
     const [joinRoomId, setJoinRoomId] = useState("");
+    const [activeTab, setActiveTab] = useState("create");
     const navigate = useNavigate();
+
+    // Check for stored username
+    useEffect(() => {
+        const storedUsername = sessionStorage.getItem("username");
+        if (storedUsername) {
+            setUsername(storedUsername);
+            setIsNameSet(true);
+        }
+    }, []);
 
     // Set up event handlers
     useEffect(() => {
@@ -25,7 +41,7 @@ export default function Home() {
         setupEventHandler("Connect", (receivedRoomId: string) => {
             navigate(`/room?id=${receivedRoomId}`);
         });
-    }, [isConnected]);
+    }, [isConnected, setupEventHandler, navigate]);
 
     const handleCreateRoom = async () => {
         if (connection && isNameSet) {
@@ -54,6 +70,7 @@ export default function Home() {
     const handleSetUsername = () => {
         if (username.trim()) {
             setIsNameSet(true);
+            sessionStorage.setItem("username", username);
         }
     };
 
@@ -66,80 +83,142 @@ export default function Home() {
 
     if (!isConnected) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gray-100">
-                <div className="text-center p-6 max-w-sm bg-white rounded-lg shadow-md">
-                    <h1 className="text-xl font-bold mb-4 mt-0 leading-1.5">Connecting to chat server...</h1>
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                </div>
+            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                <Card className="w-full max-w-md shadow-lg">
+                    <CardHeader className="text-center">
+                        <CardTitle className="text-2xl">Meet Space</CardTitle>
+                        <CardDescription>Connecting to server...</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex justify-center">
+                        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+                    </CardContent>
+                </Card>
             </div>
         );
     }
 
     if (!isNameSet) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gray-100">
-                <div className="p-6 max-w-sm w-full bg-white rounded-lg shadow-md">
-                    <h1 className="text-xl font-bold mb-4 text-center mt-0 leading-1.5">Welcome to Meet Space</h1>
-                    <div className="flex flex-col">
-                        <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            onKeyPress={(e) => handleKeyPress(e, handleSetUsername)}
-                            placeholder="Enter your username"
-                            className="w-full p-2 mb-4 border border-gray-300 rounded"
-                        />
-                        <button
+            <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+                <Card className="w-full max-w-md shadow-lg">
+                    <CardHeader className="text-center">
+                        <div className="flex justify-center mb-6">
+                            <div className="flex items-center space-x-2">
+                                <VideoIcon className="h-8 w-8 text-blue-500" />
+                                <span className="text-3xl font-bold">Meet Space</span>
+                            </div>
+                        </div>
+                        <CardTitle className="text-2xl">Welcome to Meet Space</CardTitle>
+                        <CardDescription>Get started with video meetings and chat</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="username">Your name</Label>
+                                <Input
+                                    id="username"
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    onKeyPress={(e) => handleKeyPress(e, handleSetUsername)}
+                                    placeholder="Enter your name"
+                                    className="focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                    <CardFooter>
+                        <Button
+                            className="w-full bg-blue-600 hover:bg-blue-700"
                             onClick={handleSetUsername}
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+                            disabled={!username.trim()}
                         >
                             Continue
-                        </button>
-                    </div>
-                </div>
+                        </Button>
+                    </CardFooter>
+                </Card>
             </div>
         );
     }
 
     return (
-        <div className="flex items-center justify-center h-screen bg-gray-100">
-            <div className="p-6 max-w-md w-full bg-white rounded-lg shadow-md">
-                <div className="mb-4 text-center">
-                    <h1 className="text-xl font-bold mt-0 leading-1.5">Meet Space</h1>
-                    <p className="text-sm text-gray-600">Logged in as: {username}</p>
-                </div>
-
-                <div className="flex flex-col gap-6">
-                    <div className="text-center">
-                        <h2 className="font-bold mb-2 mt-0 leading-1.5">Create a New Room</h2>
-                        <button
-                            onClick={handleCreateRoom}
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded"
-                        >
-                            Create Room
-                        </button>
+        <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+            <Card className="w-full max-w-md shadow-lg">
+                <CardHeader className="text-center">
+                    <div className="flex justify-center mb-6">
+                        <div className="flex items-center space-x-2">
+                            <VideoIcon className="h-8 w-8 text-blue-500" />
+                            <span className="text-3xl font-bold">Meet Space</span>
+                        </div>
                     </div>
+                    <CardTitle className="text-2xl mb-2">Start or join a meeting</CardTitle>
+                    <CardDescription className="text-lg">Welcome, {username}</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 mb-8">
+                            <TabsTrigger value="create" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                                New Meeting
+                            </TabsTrigger>
+                            <TabsTrigger value="join" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                                Join Meeting
+                            </TabsTrigger>
+                        </TabsList>
 
-                    <div className="text-center">
-                        <h2 className="font-bold mb-2 mt-0 leading-1.5">Join Existing Room</h2>
-                        <input
-                            type="text"
-                            value={joinRoomId}
-                            onChange={(e) => setJoinRoomId(e.target.value)}
-                            onKeyPress={(e) => handleKeyPress(e, handleJoinRoom)}
-                            placeholder="Enter Room ID"
-                            className="w-full p-2 mb-2 border border-gray-300 rounded"
-                        />
-                        <button
-                            onClick={handleJoinRoom}
-                            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded"
-                            disabled={!joinRoomId}
-                        >
-                            Join Room
-                        </button>
+                        <TabsContent value="create" className="mt-0">
+                            <div className="space-y-6">
+                                <div className="flex flex-col items-center text-center p-6 bg-gray-50 rounded-lg">
+                                    <PlusCircle className="h-12 w-12 text-blue-500 mb-4" />
+                                    <h3 className="text-lg font-medium mb-2">Create a new meeting room</h3>
+                                    <p className="text-gray-500 mb-6">Start a new video conference and invite others to join</p>
+                                    <Button
+                                        onClick={handleCreateRoom}
+                                        className="w-full bg-blue-600 hover:bg-blue-700"
+                                        size="lg"
+                                    >
+                                        <VideoIcon className="mr-2 h-4 w-4" />
+                                        Create new meeting
+                                    </Button>
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="join" className="mt-0">
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="roomId">Room ID</Label>
+                                    <Input
+                                        id="roomId"
+                                        type="text"
+                                        value={joinRoomId}
+                                        onChange={(e) => setJoinRoomId(e.target.value)}
+                                        onKeyPress={(e) => handleKeyPress(e, handleJoinRoom)}
+                                        placeholder="Enter room ID"
+                                        className="focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <Button
+                                    onClick={handleJoinRoom}
+                                    className="w-full bg-blue-600 hover:bg-blue-700"
+                                    disabled={!joinRoomId.trim()}
+                                    size="lg"
+                                >
+                                    <ArrowRightCircle className="mr-2 h-4 w-4" />
+                                    Join meeting
+                                </Button>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+                </CardContent>
+                <CardFooter className="flex flex-col">
+                    <div className="w-full pt-4 border-t border-gray-200 mt-4">
+                        <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                            <Users className="h-4 w-4" />
+                            <span>Connect with video and chat in real-time</span>
+                        </div>
                     </div>
-                </div>
-            </div>
+                </CardFooter>
+            </Card>
         </div>
     );
 }
