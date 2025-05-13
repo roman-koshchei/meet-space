@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Work\\University\\meet-space\\Backend\\Backend.csproj": {}
+    "C:\\Work\\University\\meet-space\\backend\\Backend.csproj": {}
   },
   "projects": {
-    "C:\\Work\\University\\meet-space\\Backend\\Backend.csproj": {
+    "C:\\Work\\University\\meet-space\\backend\\Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Work\\University\\meet-space\\Backend\\Backend.csproj",
+        "projectUniqueName": "C:\\Work\\University\\meet-space\\backend\\Backend.csproj",
         "projectName": "Backend",
-        "projectPath": "C:\\Work\\University\\meet-space\\Backend\\Backend.csproj",
+        "projectPath": "C:\\Work\\University\\meet-space\\backend\\Backend.csproj",
         "packagesPath": "C:\\Users\\roman\\.nuget\\packages\\",
-        "outputPath": "C:\\Work\\University\\meet-space\\Backend\\obj\\",
+        "outputPath": "C:\\Work\\University\\meet-space\\backend\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

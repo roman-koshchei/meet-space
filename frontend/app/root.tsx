@@ -42,11 +42,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// const hubUrl = import.meta.env.DEV ? "https://localhost:7153/hub" : "/hub";
+
 export default function App() {
   return (
-      <SignalRProvider hubUrl="https://localhost:7153/hub">
-        <Outlet />
-      </SignalRProvider>
+    <SignalRProvider hubUrl={"/hub"}>
+      <Outlet />
+    </SignalRProvider>
   );
 }
 

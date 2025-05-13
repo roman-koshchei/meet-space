@@ -35,6 +35,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 app.UseCors();
 
@@ -42,5 +43,10 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<MeetingHub>("/hub");
+
+app.MapFallbackToFile("index.html");
+//if (app.Environment.IsProduction())
+//{
+//}
 
 app.Run();
