@@ -240,7 +240,6 @@ export default function Room() {
         }
     };
 
-    // todo:
     const toggleVideo = async () => {
         if (!localStreamRef.current || !localStreamRef.current.getVideoTracks().length) {
             try {
