@@ -3,12 +3,28 @@
   "WorkspaceRootPath": "C:\\Work\\University\\meet-space\\backend\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|c:\\work\\university\\meet-space\\backend\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|solutionrelative:properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|c:\\work\\university\\meet-space\\backend\\appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|solutionrelative:appsettings.development.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|c:\\work\\university\\meet-space\\backend\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|c:\\work\\university\\meet-space\\backend\\hubs\\chathub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|solutionrelative:hubs\\chathub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|c:\\work\\university\\meet-space\\backend\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|solutionrelative:appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|c:\\work\\university\\meet-space\\backend\\hubs\\researchhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|solutionrelative:hubs\\researchhub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|c:\\work\\university\\meet-space\\backend\\hubs\\meetinghub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|solutionrelative:hubs\\meetinghub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -27,27 +43,79 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\Program.cs",
-              "RelativeDocumentMoniker": "Program.cs",
-              "ToolTip": "C:\\Work\\University\\meet-space\\backend\\Program.cs",
-              "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAAYAAAAAAAAAAAAIwBsAAAAZAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-07T17:26:03.472Z",
+              "Title": "launchSettings.json",
+              "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\Properties\\launchSettings.json",
+              "RelativeDocumentMoniker": "Properties\\launchSettings.json",
+              "ToolTip": "C:\\Work\\University\\meet-space\\backend\\Properties\\launchSettings.json",
+              "RelativeToolTip": "Properties\\launchSettings.json",
+              "ViewState": "AgIAAAQAAAAAAAAAAAAgwBQAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-05-13T14:23:29.819Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "ChatHub.cs",
-              "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\Hubs\\ChatHub.cs",
-              "RelativeDocumentMoniker": "Hubs\\ChatHub.cs",
-              "ToolTip": "C:\\Work\\University\\meet-space\\backend\\Hubs\\ChatHub.cs",
-              "RelativeToolTip": "Hubs\\ChatHub.cs",
-              "ViewState": "AgIAAAEAAAAAAAAAAAAkwB0AAABFAAAAAAAAAA==",
+              "Title": "appsettings.Development.json",
+              "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\appsettings.Development.json",
+              "RelativeDocumentMoniker": "appsettings.Development.json",
+              "ToolTip": "C:\\Work\\University\\meet-space\\backend\\appsettings.Development.json",
+              "RelativeToolTip": "appsettings.Development.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-05-13T14:23:26.444Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\appsettings.json",
+              "RelativeDocumentMoniker": "appsettings.json",
+              "ToolTip": "C:\\Work\\University\\meet-space\\backend\\appsettings.json",
+              "RelativeToolTip": "appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-05-13T14:23:24.085Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "MeetingHub.cs",
+              "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\Hubs\\MeetingHub.cs",
+              "RelativeDocumentMoniker": "Hubs\\MeetingHub.cs",
+              "ToolTip": "C:\\Work\\University\\meet-space\\backend\\Hubs\\MeetingHub.cs",
+              "RelativeToolTip": "Hubs\\MeetingHub.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-07T17:01:23.571Z",
+              "WhenOpened": "2025-05-13T13:20:38.592Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "ResearchHub.cs",
+              "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\Hubs\\ResearchHub.cs",
+              "RelativeDocumentMoniker": "Hubs\\ResearchHub.cs",
+              "ToolTip": "C:\\Work\\University\\meet-space\\backend\\Hubs\\ResearchHub.cs",
+              "RelativeToolTip": "Hubs\\ResearchHub.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABoAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-13T13:20:30.5Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Work\\University\\meet-space\\backend\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAACkAAAAAAAAAAAAQwDEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-07T17:26:03.472Z",
               "EditorCaption": ""
             }
           ]

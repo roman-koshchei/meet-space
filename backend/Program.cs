@@ -43,10 +43,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<MeetingHub>("/hub");
+app.MapHub<ResearchHub>("/research");
 
 app.MapFallbackToFile("index.html");
-//if (app.Environment.IsProduction())
-//{
-//}
 
 app.Run();

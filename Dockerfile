@@ -24,6 +24,5 @@ RUN rm -rf wwwroot
 COPY --from=frontend-build /app/frontend/build/client ./wwwroot
 
 EXPOSE 8080
-EXPOSE 8081
 
 ENTRYPOINT ["dotnet", "Backend.dll"]
