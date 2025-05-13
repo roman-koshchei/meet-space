@@ -5,11 +5,12 @@ import { Button } from "~/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import {
     Mic, MicOff, Video, VideoOff, MessageSquare, Users,
-    PhoneOff, Share2, MoreVertical, Settings
+    PhoneOff, Share2, Settings, Airplay, MessagesSquare
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import type { Route } from "./+types/room";
 import type { SdpDataModel } from "~/models/SdpDataModel";
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "~/components/ui/tooltip";
 
 export function meta({}: Route.MetaArgs) {
     return [
@@ -32,10 +33,11 @@ export default function Room() {
     const [username, setUsername] = useState("");
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [participants, setParticipants] = useState<string[]>([]);
-    const [isMicOn, setIsMicOn] = useState(true);
-    const [isVideoOn, setIsVideoOn] = useState(true);
+    const [isMicOn, setIsMicOn] = useState(false);
+    const [isVideoOn, setIsVideoOn] = useState(false);
     const [isSharingScreen, setIsSharingScreen] = useState(false);
     const [activeTab, setActiveTab] = useState("meeting");
+    const [showCopiedTooltip, setShowCopiedTooltip] = useState(false);
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRefs = useRef<{ [userId: string]: HTMLVideoElement | null }>({});
     const localStreamRef = useRef<MediaStream | null>(null);
@@ -65,7 +67,7 @@ export default function Room() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: isVideoOn,
-                    audio: isMicOn
+                    audio: true
                 });
 
                 if (localVideoRef.current) {
@@ -73,10 +75,20 @@ export default function Room() {
                 }
 
                 localStreamRef.current = stream;
-            } catch (err) {
+
+                // Установим начальное состояние для аудио
+                const audioTrack = stream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = true;
+                    setIsMicOn(true);
+                    console.log('Audio track initialized:', audioTrack.enabled);
+                }
+            } catch (err: any) {
+                console.log(err);
                 console.error("Error accessing media devices:", err);
+                setIsVideoOn(false)
                 setMessages(prev => [...prev, {
-                    text: `Error accessing camera/microphone: ${err}`,
+                    text: `Error accessing camera/microphone: ${err.message.replace("NotAllowedError:", "")}`,
                     isSystem: true
                 }]);
             }
@@ -179,8 +191,6 @@ export default function Room() {
 
                 setParticipants(existingUsers);
                 existingUsers.forEach((userId: string) => createPeerConnection(userId));
-
-                setMessages(prev => [...prev, { text: `Joined room: ${roomId}`, isSystem: true }]);
             } catch (err) {
                 console.error("Error joining meeting:", err);
                 setMessages(prev => [...prev, {
@@ -206,26 +216,84 @@ export default function Room() {
 
     // Handle media controls
     const toggleMic = () => {
-        if (localStreamRef.current) {
-            const audioTrack = localStreamRef.current.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
-                setIsMicOn(audioTrack.enabled);
-            }
+        if (!localStreamRef.current) {
+            console.log('Initializing stream...');
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    localStreamRef.current = stream;
+                    const audioTrack = stream.getAudioTracks()[0];
+                    if (audioTrack) {
+                        audioTrack.enabled = true;
+                        setIsMicOn(true);
+                    }
+                })
+                .catch(err => console.error('Error initializing audio:', err));
+            return;
+        }
+
+        const audioTrack = localStreamRef.current.getAudioTracks()[0];
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled;
+            setIsMicOn(audioTrack.enabled);
+        } else {
+            console.log('No audio track available');
         }
     };
 
-    const toggleVideo = () => {
-        if (localStreamRef.current) {
+    // todo:
+    const toggleVideo = async () => {
+        if (!localStreamRef.current || !localStreamRef.current.getVideoTracks().length) {
+            try {
+                console.log('Initializing video stream...');
+                const videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: false
+                });
+
+                const videoTrack = videoStream.getVideoTracks()[0];
+
+                if (localStreamRef.current) {
+                    localStreamRef.current.addTrack(videoTrack);
+                } else {
+                    localStreamRef.current = videoStream;
+                }
+
+                if (localVideoRef.current) {
+                    localVideoRef.current.srcObject = localStreamRef.current;
+                }
+
+                videoTrack.enabled = true;
+                setIsVideoOn(true);
+                console.log('Video track initialized:', videoTrack.enabled);
+            } catch (err) {
+                console.error('Error initializing video:', err);
+                setIsVideoOn(false);
+                return;
+            }
+        } else {
             const videoTrack = localStreamRef.current.getVideoTracks()[0];
             if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                setIsVideoOn(videoTrack.enabled);
+                if (!isVideoOn) {
+                    videoTrack.enabled = true;
+                    setIsVideoOn(true);
+                } else {
+                    videoTrack.enabled = false;
+                    videoTrack.stop();
+                    setIsVideoOn(false);
+
+                    localStreamRef.current.removeTrack(videoTrack);
+
+                    if (localVideoRef.current) {
+                        localVideoRef.current.srcObject = localStreamRef.current;
+                    }
+                }
+                console.log('Video track toggled. New state:', videoTrack.enabled);
             }
         }
     };
 
     const toggleScreenShare = async () => {
+        console.log("Current state:", isSharingScreen);
         if (!isSharingScreen) {
             try {
                 const screenStream = await navigator.mediaDevices.getDisplayMedia({
@@ -236,7 +304,6 @@ export default function Room() {
                     localVideoRef.current.srcObject = screenStream;
                 }
 
-                // Replace the video track in all peer connections
                 const screenTrack = screenStream.getVideoTracks()[0];
 
                 Object.values(peerConnections.current).forEach(pc => {
@@ -248,38 +315,39 @@ export default function Room() {
                     }
                 });
 
-                // When screen sharing stops
-                screenTrack.onended = () => {
+                screenTrack.addEventListener('ended', () => {
                     stopScreenSharing();
-                };
+                });
 
                 setIsSharingScreen(true);
             } catch (err) {
                 console.error("Error sharing screen:", err);
             }
         } else {
-            stopScreenSharing();
+            if (localVideoRef.current?.srcObject instanceof MediaStream) {
+                const currentStream = localVideoRef.current.srcObject;
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+
+            setIsSharingScreen(false);
+            await stopScreenSharing();
         }
     };
 
-    const stopScreenSharing = () => {
+    const stopScreenSharing = async () => {
         if (localStreamRef.current && localVideoRef.current) {
-            // Switch back to camera
             localVideoRef.current.srcObject = localStreamRef.current;
 
-            // Replace screen sharing track with camera track in all peer connections
             const videoTrack = localStreamRef.current.getVideoTracks()[0];
 
-            Object.values(peerConnections.current).forEach(pc => {
+            await Promise.all(Object.values(peerConnections.current).map(async pc => {
                 const sender = pc.getSenders().find(s =>
                     s.track?.kind === "video"
                 );
                 if (sender && videoTrack) {
-                    sender.replaceTrack(videoTrack);
+                    await sender.replaceTrack(videoTrack);
                 }
-            });
-
-            setIsSharingScreen(false);
+            }));
         }
     };
 
@@ -381,6 +449,17 @@ export default function Room() {
         }
     };
 
+    const copyIdToClipboard = () => {
+        if (roomId) {
+            navigator.clipboard.writeText(roomId).then(() => {
+                setShowCopiedTooltip(true);
+                setTimeout(() => setShowCopiedTooltip(false), 2000);
+            }).catch(err => {
+                console.error("Error copying Room ID:", err);
+            });
+        }
+    }
+
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
             e.preventDefault();
@@ -471,8 +550,9 @@ export default function Room() {
                                 playsInline
                                 className="w-full h-full object-cover"
                             />
-                            <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs py-1 px-2 rounded">
-                                {username} (You)
+                            <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 z-1 text-white text-xs py-1 px-2 rounded flex items-center space-x-1">
+                                <span>{username} (You)</span>
+                                {!isMicOn && <MicOff className="w-3 h-3" />}
                             </div>
                             {!isVideoOn && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-70">
@@ -504,9 +584,9 @@ export default function Room() {
                     </div>
 
                     {/* Meeting controls */}
-                    <div className="flex justify-center space-x-2 py-4">
+                    <div className="flex sticky justify-center space-x-2 py-4">
                         <Button
-                            variant={isMicOn ? "default" : "destructive"}
+                            variant={isMicOn ? "outline" : "destructive"}
                             size="icon"
                             onClick={toggleMic}
                             className="rounded-full h-12 w-12"
@@ -514,20 +594,45 @@ export default function Room() {
                             {isMicOn ? <Mic /> : <MicOff />}
                         </Button>
                         <Button
-                            variant={isVideoOn ? "default" : "destructive"}
+                            variant={isVideoOn ? "outline" : "destructive"}
                             size="icon"
                             onClick={toggleVideo}
                             className="rounded-full h-12 w-12"
                         >
                             {isVideoOn ? <Video /> : <VideoOff />}
                         </Button>
+                        <TooltipProvider>
+                            <Tooltip open={showCopiedTooltip}>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={copyIdToClipboard}
+                                        className="rounded-full h-12 w-12"
+                                    >
+                                        <Share2 />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>ID copied to clipboard!</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                         <Button
-                            variant={isSharingScreen ? "secondary" : "outline"}
+                            variant={isSharingScreen ? "default" : "outline"}
                             size="icon"
                             onClick={toggleScreenShare}
                             className="rounded-full h-12 w-12"
                         >
-                            <Share2 />
+                            <Airplay />
+                        </Button>
+                        <Button
+                            variant={activeTab === "chat" ? "default" : "outline"}
+                            size="icon"
+                            onClick={() => setActiveTab(activeTab === "chat" ? "meeting" : "chat")}
+                            className="rounded-full h-12 w-12"
+                        >
+                            <MessageSquare />
                         </Button>
                         <Button
                             variant="destructive"
@@ -537,18 +642,11 @@ export default function Room() {
                         >
                             <PhoneOff />
                         </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="rounded-full h-12 w-12"
-                        >
-                            <Settings />
-                        </Button>
                     </div>
                 </div>
 
                 {/* Chat area - visible on desktop or when Chat tab is active */}
-                <div className={`w-full md:w-80 lg:w-96 bg-white shadow-md p-4 flex flex-col ${activeTab === 'chat' || window.innerWidth >= 768 ? 'block' : 'hidden md:block'}`}>
+                <div className={`w-full md:w-80 lg:w-96 bg-white shadow-md p-4 flex ${activeTab === 'chat' ? 'block' : 'hidden'}`}>
                     {/* Chat tabs */}
                     <Tabs defaultValue="chat" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
@@ -602,7 +700,7 @@ export default function Room() {
                                 />
                                 <Button
                                     onClick={handleSendMessage}
-                                    className="rounded-l-none"
+                                    className="rounded-l-none h-full"
                                 >
                                     Send
                                 </Button>
