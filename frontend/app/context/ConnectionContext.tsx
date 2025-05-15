@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import * as SignalR from "@microsoft/signalr";
 
-interface SignalRContextType {
+export interface SignalRContextType {
     connection: SignalR.HubConnection | null;
     isConnected: boolean;
     setupEventHandler: (eventName: string, callback: (...args: any[]) => void) => void;
