@@ -7,7 +7,7 @@ import {
   ScrollRestoration,
 } from "react-router";
 
-import { SignalRProvider } from "./context/ConnectionContext";
+import { SignalRProvider } from "./store/ConnectionContext";
 import type { Route } from "./+types/root";
 import "./app.css";
 
