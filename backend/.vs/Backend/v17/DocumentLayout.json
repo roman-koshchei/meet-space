@@ -3,8 +3,12 @@
   "WorkspaceRootPath": "C:\\Work\\University\\meet-space\\backend\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|c:\\work\\university\\meet-space\\backend\\hubs\\chathub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|solutionrelative:hubs\\chathub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|c:\\work\\university\\meet-space\\backend\\hubs\\meetinghub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|solutionrelative:hubs\\meetinghub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|c:\\work\\university\\meet-space\\backend\\data\\meetinghubdata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|solutionrelative:data\\meetinghubdata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{7F7A2A00-7ACC-4115-BB73-09E96E1B6160}|Backend.csproj|c:\\work\\university\\meet-space\\backend\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -27,28 +31,39 @@
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "MeetingHubData.cs",
+              "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\Data\\MeetingHubData.cs",
+              "RelativeDocumentMoniker": "Data\\MeetingHubData.cs",
+              "ToolTip": "C:\\Work\\University\\meet-space\\backend\\Data\\MeetingHubData.cs",
+              "RelativeToolTip": "Data\\MeetingHubData.cs",
+              "ViewState": "AgIAAAEAAAAAAAAAAADgvwYAAAAvAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-16T12:27:34.382Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MeetingHub.cs",
+              "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\Hubs\\MeetingHub.cs",
+              "RelativeDocumentMoniker": "Hubs\\MeetingHub.cs",
+              "ToolTip": "C:\\Work\\University\\meet-space\\backend\\Hubs\\MeetingHub.cs",
+              "RelativeToolTip": "Hubs\\MeetingHub.cs",
+              "ViewState": "AgIAACIAAAAAAAAAAAAUwCsAAABFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-16T08:43:39.948Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
               "ToolTip": "C:\\Work\\University\\meet-space\\backend\\Program.cs",
               "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAAYAAAAAAAAAAAAIwBsAAAAZAAAAAAAAAA==",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAgwBsAAAAZAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-07T17:26:03.472Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "ChatHub.cs",
-              "DocumentMoniker": "C:\\Work\\University\\meet-space\\backend\\Hubs\\ChatHub.cs",
-              "RelativeDocumentMoniker": "Hubs\\ChatHub.cs",
-              "ToolTip": "C:\\Work\\University\\meet-space\\backend\\Hubs\\ChatHub.cs",
-              "RelativeToolTip": "Hubs\\ChatHub.cs",
-              "ViewState": "AgIAABMAAAAAAAAAAAAwwB0AAAAIAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-05-07T17:01:23.571Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-05-07T17:26:03.472Z"
             }
           ]
         }

@@ -6,8 +6,6 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
-
-import { SignalRProvider } from "./store/ConnectionContext";
 import type { Route } from "./+types/root";
 import "./app.css";
 
@@ -42,14 +40,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-const hubUrl = import.meta.env.DEV ? "https://localhost:7153/hub" : "/hub";
-
 export default function App() {
-  return (
-    <SignalRProvider hubUrl={hubUrl}>
-      <Outlet />
-    </SignalRProvider>
-  );
+  return <Outlet />;
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

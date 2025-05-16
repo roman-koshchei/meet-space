@@ -1,15 +1,15 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Work\\University\\meet-space\\backend\\Backend.csproj": {}
+    "C:\\Work\\University\\meet-space\\Backend\\Backend.csproj": {}
   },
   "projects": {
-    "C:\\Work\\University\\meet-space\\backend\\Backend.csproj": {
+    "C:\\Work\\University\\meet-space\\Backend\\Backend.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Work\\University\\meet-space\\backend\\Backend.csproj",
+        "projectUniqueName": "C:\\Work\\University\\meet-space\\Backend\\Backend.csproj",
         "projectName": "Backend",
-        "projectPath": "C:\\Work\\University\\meet-space\\backend\\Backend.csproj",
+        "projectPath": "C:\\Work\\University\\meet-space\\Backend\\Backend.csproj",
         "packagesPath": "C:\\Users\\roman\\.nuget\\packages\\",
         "outputPath": "C:\\Work\\University\\meet-space\\backend\\obj\\",
         "projectStyle": "PackageReference",
@@ -44,7 +44,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.200"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
@@ -78,7 +78,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.201/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.300/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

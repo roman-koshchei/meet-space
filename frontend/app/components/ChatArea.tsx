@@ -3,42 +3,26 @@ import { MessageSquare, Users } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { getColorByInitial, getInitials } from "~/helper";
-import React, { useEffect, useRef, useState } from "react";
-import type { SignalRContextType } from "~/store/ConnectionContext";
-import type { Message } from "~/routes/room";
+import { useEffect, useRef, useState } from "react";
+import { useRoomStore } from "~/store/room";
 
-type Props = {
-  activeTab: string;
-  username: string;
-  participants: string[];
-  messages: Message[];
-  connection: SignalRContextType["connection"];
-  roomId: string;
-};
+export default function ChatArea({ activeTab }: { activeTab: string }) {
+  const username = useRoomStore((state) => state.username);
+  const sendMessage = useRoomStore((state) => state.sendMessage);
+  const otherUsers = useRoomStore((state) => state.otherUsers);
 
-export default function ChatArea({
-  activeTab,
-  username,
-  participants,
-  messages,
-  connection,
-  roomId,
-}: Props) {
   const handleSendMessage = async (newMessage: string) => {
-    if (connection && newMessage && roomId) {
-      try {
-        const messageObj = {
-          text: newMessage,
-          sender: username,
-        };
-        await connection.invoke(
-          "SendMessage",
-          roomId,
-          JSON.stringify(messageObj)
-        );
-      } catch (err) {
-        console.error("Error sending message:", err);
-      }
+    const message = newMessage.trim();
+    if (message == "") return;
+
+    try {
+      const messageObj = {
+        text: message,
+        sender: username,
+      };
+      await sendMessage(JSON.stringify(messageObj));
+    } catch (err) {
+      console.error("Error sending message:", err);
     }
   };
 
@@ -57,16 +41,12 @@ export default function ChatArea({
           </TabsTrigger>
           <TabsTrigger value="participants">
             <Users className="h-4 w-4 mr-2" />
-            People ({participants.length + 1})
+            People ({otherUsers.length + 1})
           </TabsTrigger>
         </TabsList>
 
         {/* Chat content */}
-        <MessageArea
-          username={username}
-          messages={messages}
-          sendMessage={handleSendMessage}
-        />
+        <MessageArea sendMessage={handleSendMessage} />
 
         {/* Participants list */}
         <TabsContent
@@ -87,20 +67,20 @@ export default function ChatArea({
               </div>
             </div>
 
-            {participants.map((participantId) => (
+            {otherUsers.map((user) => (
               <div
-                key={participantId}
+                key={user.connectionId}
                 className="flex items-center p-2 rounded hover:bg-gray-100"
               >
                 <Avatar className="h-10 w-10 mr-2">
                   <AvatarFallback
-                    className={`text-lg ${getColorByInitial(participantId)}`}
+                    className={`text-lg ${getColorByInitial(user.name)}`}
                   >
-                    {getInitials(participantId)}
+                    {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <p className="font-medium">{participantId}</p>
+                  <p className="font-medium">{user.name}</p>
                 </div>
               </div>
             ))}
@@ -112,14 +92,13 @@ export default function ChatArea({
 }
 
 function MessageArea({
-  username,
-  messages,
   sendMessage,
 }: {
-  username: string;
-  messages: Message[];
   sendMessage: (message: string) => Promise<void>;
 }) {
+  const username = useRoomStore((state) => state.username);
+  const messages = useRoomStore((state) => state.messages);
+
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

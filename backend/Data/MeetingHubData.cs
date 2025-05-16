@@ -2,9 +2,14 @@
 
 namespace Backend.Data;
 
+public class RoomUser
+{
+    public required string RoomId { get; set; }
+    public required string ConnectionId { get; set; }
+    public required string Name { get; set; }
+}
+
 public class MeetingHubData
 {
-    public ConcurrentDictionary<string, (string meetingId, string userId)> Connections { get; set; } = new();
-
-    public ConcurrentDictionary<string, (string meetingId, string connectionId)> Users { get; set; } = new();
+    public ConcurrentDictionary<string, RoomUser> RoomUsers { get; set; } = new();
 }

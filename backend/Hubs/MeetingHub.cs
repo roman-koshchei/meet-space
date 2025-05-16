@@ -4,83 +4,48 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Backend.Hubs;
 
-public class MeetingHub : Hub
+public class MeetingHub(MeetingHubData meetingHubData) : Hub
 {
-    private readonly MeetingHubData _meetingHubData;
-    
-    public MeetingHub(MeetingHubData meetingHubData)
+    public async Task SendTo(string connectionId, string data)
     {
-        _meetingHubData = meetingHubData;
+        await Clients.Client(connectionId).SendAsync("ReceiveFrom", connectionId, data);
     }
-    
-    // SDP - audio/video
-    public async Task<List<string>> UserJoining(string userId, string meetingId)
-    {
-        await Groups.AddToGroupAsync(Context.ConnectionId, meetingId);
 
-        _meetingHubData.Connections[Context.ConnectionId] = (meetingId, userId);
-        _meetingHubData.Users[userId] = (meetingId, Context.ConnectionId);
-
-        await Clients.OthersInGroup(meetingId).SendAsync("AnotherUserJoined", userId);
-
-        return _meetingHubData.Connections.Values
-            .Where(t => t.meetingId == meetingId && t.userId != userId)
-            .Select(t => t.userId)
-            .ToList();
-    }
-    
-    public async Task SdpProcess(string toUserId, SdpDataModel sdpData)
-    {
-        var fromUserId = _meetingHubData.Users.FirstOrDefault(x => x.Value.connectionId == Context.ConnectionId).Key;
-        var toConnection = _meetingHubData.Users.FirstOrDefault(x => x.Key == toUserId).Value.connectionId;
-        
-        await Clients.Client(toConnection).SendAsync("sdpProcess", fromUserId, sdpData);
-    }
-    
     // Chat
-    public async Task SendMessage(string meetingId, string message)
+    public async Task SendMessage(string roomId, string message)
     {
-        await Clients.Group(meetingId).SendAsync("ReceiveMessage", message);
+        await Clients.OthersInGroup(roomId).SendAsync("ReceiveMessage", message);
     }
-    
-    public async Task GlobalSendMessage(string message)
-    {
-        await Clients.All.SendAsync("GlobalReceiveMessage", message);
-    }
-    
+
     // Rooms
-    public async Task CreateRoom()
-    {
-        var roomId = Guid.NewGuid().ToString();
-
-        await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
-
-        await Clients.Group(roomId).SendAsync("Connect", roomId);
-    }
-
-    public async Task ConnectToRoom(string roomId)
+    public async Task<RoomUser[]> ConnectToRoom(string roomId, string name)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
+        await Clients.OthersInGroup(roomId).SendAsync("UserJoinedRoom", Context.ConnectionId, name);
 
-        await Clients.Group(roomId).SendAsync("NewUserInRoom");
+        var othersUsers = meetingHubData.RoomUsers.Values.Where(x => x.RoomId == roomId).ToArray();
+
+        if (!meetingHubData.RoomUsers.ContainsKey(Context.ConnectionId))
+        {
+            meetingHubData.RoomUsers.TryAdd(Context.ConnectionId, new RoomUser
+            {
+                ConnectionId = Context.ConnectionId,
+                Name = name,
+                RoomId = roomId
+            });
+        }
+
+        return othersUsers;
     }
-    
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        if (!_meetingHubData.Connections.TryGetValue(Context.ConnectionId, out var data))
-            return;
 
-        var (meetingId, userId) = data;
-
-        _meetingHubData.Connections.TryRemove(Context.ConnectionId, out _);
-        _meetingHubData.Users.TryRemove(userId, out _);
-
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, meetingId);
-        await Clients.OthersInGroup(meetingId).SendAsync("UserLeft", userId);
-
-        if (exception != null)
+        Console.WriteLine($"OnDisconnectedAsync {Context.ConnectionId}");
+        if (meetingHubData.RoomUsers.TryRemove(Context.ConnectionId, out var userRoom))
         {
-            Console.WriteLine($"{userId} disconnected with error from {meetingId}. Error message: {exception.Message}");
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, userRoom.RoomId);
+            await Clients.OthersInGroup(userRoom.RoomId).SendAsync("UserLeft", Context.ConnectionId);
         }
 
         await base.OnDisconnectedAsync(exception);
