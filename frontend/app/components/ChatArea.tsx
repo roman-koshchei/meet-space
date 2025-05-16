@@ -24,10 +24,7 @@ export default function ChatArea({
   connection,
   roomId,
 }: Props) {
-  const [newMessage, setNewMessage] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (newMessage: string) => {
     if (connection && newMessage && roomId) {
       try {
         const messageObj = {
@@ -39,26 +36,11 @@ export default function ChatArea({
           roomId,
           JSON.stringify(messageObj)
         );
-        setNewMessage("");
       } catch (err) {
         console.error("Error sending message:", err);
       }
     }
   };
-
-  const handleKeyPress = async (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      await handleSendMessage();
-    }
-  };
-
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [messages]);
 
   return (
     <div
@@ -80,56 +62,11 @@ export default function ChatArea({
         </TabsList>
 
         {/* Chat content */}
-        <TabsContent
-          value="chat"
-          className="flex flex-col h-[calc(100vh-14rem)]"
-        >
-          <div className="flex-1 overflow-y-auto mb-4">
-            {messages.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                No messages yet. Be the first to send a message!
-              </div>
-            ) : (
-              messages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`mb-2 p-2 rounded ${
-                    msg.isSystem
-                      ? "bg-gray-200 text-center text-sm"
-                      : msg.sender === username
-                      ? "bg-blue-100 ml-auto max-w-xs"
-                      : "bg-gray-100 mr-auto max-w-xs"
-                  }`}
-                >
-                  {!msg.isSystem && msg.sender !== username && (
-                    <div className="text-xs text-gray-600 font-semibold">
-                      {msg.sender}
-                    </div>
-                  )}
-                  <div>{msg.text}</div>
-                </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="flex">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type a message..."
-              className="flex-1 p-2 border border-gray-300 rounded-l"
-            />
-            <Button
-              onClick={handleSendMessage}
-              className="rounded-l-none h-full"
-            >
-              Send
-            </Button>
-          </div>
-        </TabsContent>
+        <MessageArea
+          username={username}
+          messages={messages}
+          sendMessage={handleSendMessage}
+        />
 
         {/* Participants list */}
         <TabsContent
@@ -171,5 +108,84 @@ export default function ChatArea({
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function MessageArea({
+  username,
+  messages,
+  sendMessage,
+}: {
+  username: string;
+  messages: Message[];
+  sendMessage: (message: string) => Promise<void>;
+}) {
+  const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleSendMessage = async () => {
+    await sendMessage(newMessage);
+  };
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  return (
+    <TabsContent value="chat" className="flex flex-col h-[calc(100vh-14rem)]">
+      <div className="flex-1 overflow-y-auto mb-4">
+        {messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            No messages yet. Be the first to send a message!
+          </div>
+        ) : (
+          messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`mb-2 p-2 rounded ${
+                msg.isSystem
+                  ? "bg-gray-200 text-center text-sm"
+                  : msg.sender === username
+                  ? "bg-blue-100 ml-auto max-w-xs"
+                  : "bg-gray-100 mr-auto max-w-xs"
+              }`}
+            >
+              {!msg.isSystem && msg.sender !== username && (
+                <div className="text-xs text-gray-600 font-semibold">
+                  {msg.sender}
+                </div>
+              )}
+              <div>{msg.text}</div>
+            </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <form
+        className="flex"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          await handleSendMessage();
+        }}
+      >
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="Type a message..."
+          className="flex-1 p-2 border border-gray-300 rounded-l"
+        />
+        <Button
+          onClick={handleSendMessage}
+          className="rounded-l-none h-full"
+          type="submit"
+        >
+          Send
+        </Button>
+      </form>
+    </TabsContent>
   );
 }

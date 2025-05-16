@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useSignalR } from "~/store/ConnectionContext";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import {
@@ -22,129 +21,59 @@ export function meta({}: Route.MetaArgs) {
     { title: "Meet Space" },
     {
       name: "description",
-      content: "Video meetings and real-time chat with SignalR",
+      content: "Video meetings and real-time chat",
     },
   ];
 }
 
-export default function Home() {
-  const { connection, isConnected, setupEventHandler } = useSignalR();
-
+export default function HomePage() {
   const [username, setUsername] = useState<string>(() => loadUsername() ?? "");
-  const [isNameSet, setIsNameSet] = useState<boolean>(username.trim() != "");
 
   const [roomId, setRoomId] = useState("");
   const [activeTab, setActiveTab] = useState("create");
   const navigate = useNavigate();
 
-  // Set up event handlers
-  useEffect(() => {
-    if (!isConnected) return;
-
-    // Set up the event handler for room creation
-    setupEventHandler("Connect", (receivedRoomId: string) => {
-      navigate(`/room/${receivedRoomId}`);
-    });
-  }, [isConnected, setupEventHandler, navigate]);
-
   const handleCreateRoom = async () => {
-    if (connection && isNameSet) {
-      try {
-        saveUsername(username);
-        await connection.invoke("CreateRoom");
-      } catch (err) {
-        console.error("Error creating room:", err);
-      }
+    if (username.trim() == "") {
+      alert("Please specify username.");
+      return;
     }
+
+    saveUsername(username);
+    const roomId = crypto.randomUUID();
+    navigate(`/room/${roomId}`);
   };
 
   const handleJoinRoom = async () => {
-    if (connection && roomId && isNameSet) {
-      try {
-        saveUsername(username);
-        await connection.invoke("ConnectToRoom", roomId);
-        navigate(`/room/${roomId}`);
-      } catch (err) {
-        console.error("Error joining room:", err);
-      }
+    if (username.trim() == "") {
+      alert("Please specify username.");
+      return;
     }
+
+    if (roomId == "") {
+      alert("Please specify Room Id");
+      return;
+    }
+
+    saveUsername(username);
+    navigate(`/room/${roomId}`);
   };
 
-  const handleSetUsername = () => {
-    if (username.trim()) {
-      setIsNameSet(true);
-      saveUsername(username);
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent, action: () => void) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      action();
-    }
-  };
-
-  if (!isConnected) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Meet Space</CardTitle>
-            <CardDescription>Connecting to server...</CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!isNameSet) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-6">
-              <div className="flex items-center space-x-2">
-                <VideoIcon className="h-8 w-8 text-blue-500" />
-                <span className="text-3xl font-bold">Meet Space</span>
-              </div>
-            </div>
-            <CardTitle className="text-2xl">Welcome to Meet Space</CardTitle>
-            <CardDescription>
-              Get started with video meetings and chat
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">Your name</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  onKeyUp={(e) => handleKeyPress(e, handleSetUsername)}
-                  placeholder="Enter your name"
-                  className="focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button
-              className="w-full bg-blue-600 hover:bg-blue-700"
-              onClick={handleSetUsername}
-              disabled={!username.trim()}
-            >
-              Continue
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
+  // if (!isConnected) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen bg-gray-100">
+  //       <Card className="w-full max-w-md shadow-lg">
+  //         <CardHeader className="text-center">
+  //           <CardTitle className="text-2xl">Meet Space</CardTitle>
+  //           <CardDescription>Connecting to server...</CardDescription>
+  //         </CardHeader>
+  //         <CardContent className="flex justify-center">
+  //           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+  //         </CardContent>
+  //       </Card>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
@@ -159,11 +88,19 @@ export default function Home() {
           <CardTitle className="text-2xl mb-2">
             Start or join a meeting
           </CardTitle>
-          <CardDescription className="text-lg">
-            Welcome, {username}
+          <CardDescription className="text-lg space-y-2">
+            <Label htmlFor="username">Your name</Label>
+            <Input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your name"
+              className="focus:ring-2 focus:ring-blue-500"
+            />
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="">
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
@@ -215,7 +152,6 @@ export default function Home() {
                     type="text"
                     value={roomId}
                     onChange={(e) => setRoomId(e.target.value)}
-                    onKeyPress={(e) => handleKeyPress(e, handleJoinRoom)}
                     placeholder="Enter room ID"
                     className="focus:ring-2 focus:ring-blue-500"
                   />

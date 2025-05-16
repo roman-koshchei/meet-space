@@ -4,9 +4,9 @@ import { useSignalR } from "~/store/ConnectionContext";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import type { Route } from "./+types/room";
 import type { SdpDataModel } from "~/models/SdpDataModel";
-import Header from "~/components/header";
-import MeetingArea from "~/components/meetingArea";
-import ChatArea from "~/components/chatArea";
+import Header from "~/components/Header";
+import MeetingArea from "~/components/MeetingArea";
+import ChatArea from "~/components/ChatArea";
 import { loadUsername } from "~/store/session";
 
 export interface Message {
