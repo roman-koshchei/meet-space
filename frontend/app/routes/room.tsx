@@ -1,15 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router";
 import { useSignalR } from "~/context/ConnectionContext";
-import { Button } from "~/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import {
-    Mic, MicOff, Video, VideoOff, MessageSquare, Users,
-    PhoneOff, Share2, MoreVertical, Settings
-} from "lucide-react";
-import { Avatar, AvatarFallback } from "~/components/ui/avatar";
+import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import type { Route } from "./+types/room";
 import type { SdpDataModel } from "~/models/SdpDataModel";
+import Header from "~/components/header";
+import MeetingArea from "~/components/meetingArea";
+import ChatArea from "~/components/chatArea";
+
+export interface Message {
+    text: string;
+    sender?: string;
+    isSystem?: boolean;
+}
 
 export function meta({}: Route.MetaArgs) {
     return [
@@ -23,18 +26,11 @@ export default function Room() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const roomId = searchParams.get("id");
-    const [messages, setMessages] = useState<Array<{
-        text: string;
-        sender?: string;
-        isSystem: boolean;
-    }>>([]);
-    const [newMessage, setNewMessage] = useState("");
+    const [messages, setMessages] = useState<Message[]>([]);
     const [username, setUsername] = useState("");
-    const messagesEndRef = useRef<HTMLDivElement>(null);
     const [participants, setParticipants] = useState<string[]>([]);
-    const [isMicOn, setIsMicOn] = useState(true);
-    const [isVideoOn, setIsVideoOn] = useState(true);
-    const [isSharingScreen, setIsSharingScreen] = useState(false);
+    const [isMicOn, setIsMicOn] = useState(false);
+    const [isVideoOn, setIsVideoOn] = useState(false);
     const [activeTab, setActiveTab] = useState("meeting");
     const localVideoRef = useRef<HTMLVideoElement>(null);
     const remoteVideoRefs = useRef<{ [userId: string]: HTMLVideoElement | null }>({});
@@ -65,7 +61,7 @@ export default function Room() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: isVideoOn,
-                    audio: isMicOn
+                    audio: true
                 });
 
                 if (localVideoRef.current) {
@@ -73,10 +69,20 @@ export default function Room() {
                 }
 
                 localStreamRef.current = stream;
-            } catch (err) {
+
+                // Connect initial state for audio
+                const audioTrack = stream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = true;
+                    setIsMicOn(true);
+                    console.log('Audio track initialized:', audioTrack.enabled);
+                }
+            } catch (err: any) {
+                console.log(err);
                 console.error("Error accessing media devices:", err);
+                setIsVideoOn(false)
                 setMessages(prev => [...prev, {
-                    text: `Error accessing camera/microphone: ${err}`,
+                    text: `Error accessing camera/microphone: ${err.message.replace("NotAllowedError:", "")}`,
                     isSystem: true
                 }]);
             }
@@ -179,8 +185,6 @@ export default function Room() {
 
                 setParticipants(existingUsers);
                 existingUsers.forEach((userId: string) => createPeerConnection(userId));
-
-                setMessages(prev => [...prev, { text: `Joined room: ${roomId}`, isSystem: true }]);
             } catch (err) {
                 console.error("Error joining meeting:", err);
                 setMessages(prev => [...prev, {
@@ -203,85 +207,6 @@ export default function Room() {
             });
         };
     }, [isConnected, roomId, username]);
-
-    // Handle media controls
-    const toggleMic = () => {
-        if (localStreamRef.current) {
-            const audioTrack = localStreamRef.current.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
-                setIsMicOn(audioTrack.enabled);
-            }
-        }
-    };
-
-    const toggleVideo = () => {
-        if (localStreamRef.current) {
-            const videoTrack = localStreamRef.current.getVideoTracks()[0];
-            if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                setIsVideoOn(videoTrack.enabled);
-            }
-        }
-    };
-
-    const toggleScreenShare = async () => {
-        if (!isSharingScreen) {
-            try {
-                const screenStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: true
-                });
-
-                if (localVideoRef.current) {
-                    localVideoRef.current.srcObject = screenStream;
-                }
-
-                // Replace the video track in all peer connections
-                const screenTrack = screenStream.getVideoTracks()[0];
-
-                Object.values(peerConnections.current).forEach(pc => {
-                    const sender = pc.getSenders().find(s =>
-                        s.track?.kind === "video"
-                    );
-                    if (sender) {
-                        sender.replaceTrack(screenTrack);
-                    }
-                });
-
-                // When screen sharing stops
-                screenTrack.onended = () => {
-                    stopScreenSharing();
-                };
-
-                setIsSharingScreen(true);
-            } catch (err) {
-                console.error("Error sharing screen:", err);
-            }
-        } else {
-            stopScreenSharing();
-        }
-    };
-
-    const stopScreenSharing = () => {
-        if (localStreamRef.current && localVideoRef.current) {
-            // Switch back to camera
-            localVideoRef.current.srcObject = localStreamRef.current;
-
-            // Replace screen sharing track with camera track in all peer connections
-            const videoTrack = localStreamRef.current.getVideoTracks()[0];
-
-            Object.values(peerConnections.current).forEach(pc => {
-                const sender = pc.getSenders().find(s =>
-                    s.track?.kind === "video"
-                );
-                if (sender && videoTrack) {
-                    sender.replaceTrack(videoTrack);
-                }
-            });
-
-            setIsSharingScreen(false);
-        }
-    };
 
     // WebRTC helpers
     const createPeerConnection = (userId: string) => {
@@ -359,61 +284,6 @@ export default function Room() {
         }
     };
 
-    // Auto-scroll to bottom when messages change
-    useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-        }
-    }, [messages]);
-
-    const handleSendMessage = async () => {
-        if (connection && newMessage && roomId) {
-            try {
-                const messageObj = {
-                    text: newMessage,
-                    sender: username
-                };
-                await connection.invoke("SendMessage", roomId, JSON.stringify(messageObj));
-                setNewMessage("");
-            } catch (err) {
-                console.error("Error sending message:", err);
-            }
-        }
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            handleSendMessage();
-        }
-    };
-
-    const handleBackToHome = () => {
-        navigate("/");
-    };
-
-    const handleEndCall = () => {
-        // Stop all media tracks
-        if (localStreamRef.current) {
-            localStreamRef.current.getTracks().forEach(track => track.stop());
-        }
-
-        // Close all peer connections
-        Object.keys(peerConnections.current).forEach(userId => {
-            closePeerConnection(userId);
-        });
-
-        navigate("/");
-    };
-
-    const getInitials = (name: string) => {
-        return name.split(' ')
-            .map(part => part.charAt(0))
-            .join('')
-            .toUpperCase()
-            .substring(0, 2);
-    };
-
     if (!isConnected || !roomId) {
         return (
             <div className="flex items-center justify-center h-screen bg-gray-100">
@@ -426,25 +296,9 @@ export default function Room() {
     }
 
     return (
-        <div className="flex flex-col h-screen bg-gray-100">
+        <div className="flex-1 flex flex-col h-screen bg-gray-100">
             {/* Header */}
-            <div className="bg-white shadow p-4 flex justify-between items-center">
-                <div>
-                    <h1 className="text-xl font-bold">Meet Space</h1>
-                    <p className="text-sm text-gray-600">Room ID: {roomId}</p>
-                </div>
-                <div className="flex items-center">
-                    <span className="mr-4 text-sm text-gray-600">{username}</span>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleBackToHome}
-                        className="mr-2"
-                    >
-                        Back to Home
-                    </Button>
-                </div>
-            </div>
+            <Header roomId={roomId} username={username} />
 
             {/* Main content */}
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -459,186 +313,31 @@ export default function Room() {
                 </div>
 
                 {/* Meeting area - visible on desktop or when Meeting tab is active */}
-                <div className={`flex-1 p-4 flex flex-col ${activeTab === 'meeting' || window.innerWidth >= 768 ? 'block' : 'hidden md:block'}`}>
-                    {/* Video grid */}
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-auto mb-4">
-                        {/* Local video */}
-                        <div className="relative bg-black rounded-lg overflow-hidden">
-                            <video
-                                ref={localVideoRef}
-                                autoPlay
-                                muted
-                                playsInline
-                                className="w-full h-full object-cover"
-                            />
-                            <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs py-1 px-2 rounded">
-                                {username} (You)
-                            </div>
-                            {!isVideoOn && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 bg-opacity-70">
-                                    <Avatar className="h-20 w-20">
-                                        <AvatarFallback className="text-2xl">
-                                            {getInitials(username)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Remote videos */}
-                        {participants.map((participantId) => (
-                            <div key={participantId} className="relative bg-black rounded-lg overflow-hidden">
-                                <video
-                                    ref={(el) => {
-                                        remoteVideoRefs.current[participantId] = el;
-                                    }}
-                                    autoPlay
-                                    playsInline
-                                    className="w-full h-full object-cover"
-                                />
-                                <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs py-1 px-2 rounded">
-                                    {participantId}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Meeting controls */}
-                    <div className="flex justify-center space-x-2 py-4">
-                        <Button
-                            variant={isMicOn ? "default" : "destructive"}
-                            size="icon"
-                            onClick={toggleMic}
-                            className="rounded-full h-12 w-12"
-                        >
-                            {isMicOn ? <Mic /> : <MicOff />}
-                        </Button>
-                        <Button
-                            variant={isVideoOn ? "default" : "destructive"}
-                            size="icon"
-                            onClick={toggleVideo}
-                            className="rounded-full h-12 w-12"
-                        >
-                            {isVideoOn ? <Video /> : <VideoOff />}
-                        </Button>
-                        <Button
-                            variant={isSharingScreen ? "secondary" : "outline"}
-                            size="icon"
-                            onClick={toggleScreenShare}
-                            className="rounded-full h-12 w-12"
-                        >
-                            <Share2 />
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={handleEndCall}
-                            className="rounded-full h-12 w-12"
-                        >
-                            <PhoneOff />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="rounded-full h-12 w-12"
-                        >
-                            <Settings />
-                        </Button>
-                    </div>
-                </div>
+                <MeetingArea
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    username={username}
+                    localVideoRef={localVideoRef}
+                    isMicOn={isMicOn}
+                    setIsMicOn={setIsMicOn}
+                    isVideoOn={isVideoOn}
+                    setIsVideoOn={setIsVideoOn}
+                    participants={participants}
+                    remoteVideoRefs={remoteVideoRefs}
+                    localStreamRef={localStreamRef}
+                    closePeerConnection={closePeerConnection}
+                    peerConnections={peerConnections}
+                    roomId={roomId}
+                />
 
                 {/* Chat area - visible on desktop or when Chat tab is active */}
-                <div className={`w-full md:w-80 lg:w-96 bg-white shadow-md p-4 flex flex-col ${activeTab === 'chat' || window.innerWidth >= 768 ? 'block' : 'hidden md:block'}`}>
-                    {/* Chat tabs */}
-                    <Tabs defaultValue="chat" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="chat">
-                                <MessageSquare className="h-4 w-4 mr-2" />
-                                Chat
-                            </TabsTrigger>
-                            <TabsTrigger value="participants">
-                                <Users className="h-4 w-4 mr-2" />
-                                People ({participants.length + 1})
-                            </TabsTrigger>
-                        </TabsList>
-
-                        {/* Chat content */}
-                        <TabsContent value="chat" className="flex flex-col h-[calc(100vh-14rem)]">
-                            <div className="flex-1 overflow-y-auto mb-4">
-                                {messages.length === 0 ? (
-                                    <div className="flex items-center justify-center h-full text-gray-500">
-                                        No messages yet. Be the first to send a message!
-                                    </div>
-                                ) : (
-                                    messages.map((msg, index) => (
-                                        <div
-                                            key={index}
-                                            className={`mb-2 p-2 rounded ${
-                                                msg.isSystem
-                                                    ? "bg-gray-200 text-center text-sm"
-                                                    : msg.sender === username
-                                                        ? "bg-blue-100 ml-auto max-w-xs"
-                                                        : "bg-gray-100 mr-auto max-w-xs"
-                                            }`}
-                                        >
-                                            {!msg.isSystem && msg.sender !== username && (
-                                                <div className="text-xs text-gray-600 font-semibold">{msg.sender}</div>
-                                            )}
-                                            <div>{msg.text}</div>
-                                        </div>
-                                    ))
-                                )}
-                                <div ref={messagesEndRef} />
-                            </div>
-
-                            <div className="flex">
-                                <input
-                                    type="text"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    onKeyPress={handleKeyPress}
-                                    placeholder="Type a message..."
-                                    className="flex-1 p-2 border border-gray-300 rounded-l"
-                                />
-                                <Button
-                                    onClick={handleSendMessage}
-                                    className="rounded-l-none"
-                                >
-                                    Send
-                                </Button>
-                            </div>
-                        </TabsContent>
-
-                        {/* Participants list */}
-                        <TabsContent value="participants" className="h-[calc(100vh-14rem)] overflow-y-auto">
-                            <div className="space-y-2">
-                                <div className="flex items-center p-2 rounded hover:bg-gray-100">
-                                    <Avatar className="h-10 w-10 mr-2">
-                                        <AvatarFallback>
-                                            {getInitials(username)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1">
-                                        <p className="font-medium">{username} (You)</p>
-                                    </div>
-                                </div>
-
-                                {participants.map((participantId) => (
-                                    <div key={participantId} className="flex items-center p-2 rounded hover:bg-gray-100">
-                                        <Avatar className="h-10 w-10 mr-2">
-                                            <AvatarFallback>
-                                                {getInitials(participantId)}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1">
-                                            <p className="font-medium">{participantId}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-                </div>
+                <ChatArea
+                    activeTab={activeTab}
+                    username={username}
+                    participants={participants}
+                    messages={messages}
+                    connection={connection}
+                    roomId={roomId} />
             </div>
         </div>
     );
