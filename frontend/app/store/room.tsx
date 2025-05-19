@@ -170,6 +170,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
       store.setState((state) => ({
         otherUsers: state.otherUsers.map((x) => {
           if (x.connectionId === connectionId) {
+            console.log(x.connectionId, event.streams[0]);
             x.stream = event.streams[0];
           }
           return x;
