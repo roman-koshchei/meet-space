@@ -20,7 +20,7 @@ public class MeetingHub(MeetingHubData meetingHubData) : Hub
     public async Task SendAnswer(string connectionId, string sdpData)
     {
         Console.WriteLine($"SendAnswer {connectionId} {sdpData}");
-        await Clients.Client(connectionId).SendAsync("ReceiveOffer", Context.ConnectionId, sdpData);
+        await Clients.Client(connectionId).SendAsync("ReceiveAnswer", Context.ConnectionId, sdpData);
     }
 
     public async Task SendIceCandidate(string connectionId, string candidateData)

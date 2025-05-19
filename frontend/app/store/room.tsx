@@ -199,7 +199,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
   connection.on(
     "ReceiveOffer",
     async (fromConnectionId: string, sdpData: string) => {
-      console.log("ReceiveOffer", fromConnectionId, sdpData);
+      console.log("ReceiveOffer", fromConnectionId);
 
       const user = store
         .getState()
@@ -229,7 +229,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
   connection.on(
     "ReceiveAnswer",
     async (fromConnectionId: string, answerData: string) => {
-      console.log("ReceiveAnswer", fromConnectionId, answerData);
+      console.log("ReceiveAnswer", fromConnectionId);
 
       const description = new RTCSessionDescription(JSON.parse(answerData));
 
