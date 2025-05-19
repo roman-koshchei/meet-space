@@ -35,6 +35,16 @@ type RoomStore = {
 const createRoomStore = (hubUrl: string, roomId: string) => {
   const username = loadUsername() ?? "Guest";
 
+  window.addEventListener("error", (event) => {
+    console.error("Global Error:", {
+      message: event.message,
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+      error: event.error,
+    });
+  });
+
   const connection = new SignalR.HubConnectionBuilder()
     .withUrl(hubUrl)
     .withAutomaticReconnect()
@@ -131,13 +141,6 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun.l.google.com:5349" },
         { urls: "stun:stun1.l.google.com:3478" },
-        { urls: "stun:stun1.l.google.com:5349" },
-        { urls: "stun:stun2.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:5349" },
-        { urls: "stun:stun3.l.google.com:3478" },
-        { urls: "stun:stun3.l.google.com:5349" },
-        { urls: "stun:stun4.l.google.com:19302" },
-        { urls: "stun:stun4.l.google.com:5349" },
       ],
     });
 

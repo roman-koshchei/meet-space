@@ -8,7 +8,22 @@ public class MeetingHub(MeetingHubData meetingHubData) : Hub
 {
     public async Task SendTo(string connectionId, string data)
     {
-        await Clients.Client(connectionId).SendAsync("ReceiveFrom", connectionId, data);
+        await Clients.Client(connectionId).SendAsync("ReceiveFrom", Context.ConnectionId, data);
+    }
+
+    public async Task SendOffer(string connectionId, string sdpData)
+    {
+        await Clients.Client(connectionId).SendAsync("ReceiveOffer", Context.ConnectionId, sdpData);
+    }
+
+    public async Task SendAnswer(string connectionId, string sdpData)
+    {
+        await Clients.Client(connectionId).SendAsync("ReceiveOffer", Context.ConnectionId, sdpData);
+    }
+
+    public async Task SendIceCandidate(string connectionId, string candidateData)
+    {
+        await Clients.Client(connectionId).SendAsync("ReceiveIceCandidate", Context.ConnectionId, candidateData);
     }
 
     // Chat
@@ -40,7 +55,6 @@ public class MeetingHub(MeetingHubData meetingHubData) : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-
         Console.WriteLine($"OnDisconnectedAsync {Context.ConnectionId}");
         if (meetingHubData.RoomUsers.TryRemove(Context.ConnectionId, out var userRoom))
         {
