@@ -13,6 +13,9 @@ type Message = {
 export type User = {
   connectionId: string;
   name: string;
+  peerConnection: RTCPeerConnection | null;
+  localTracksAreAdded: boolean;
+  stream?: MediaStream | null;
 };
 
 type RoomStore = {
@@ -22,6 +25,9 @@ type RoomStore = {
 
   connection: SignalR.HubConnection;
   isConnected: boolean;
+
+  // localPeerConnection: RTCPeerConnection;
+  localStream: MediaStream | null | undefined;
 
   sendMessage: (message: string) => Promise<void>;
 };
@@ -41,6 +47,8 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
 
     connection,
     isConnected: false,
+
+    localStream: null,
 
     sendMessage: async (message) => {
       connection.send("SendMessage", roomId, message);
@@ -72,7 +80,15 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
         ...state.messages,
         { text: `${name} has joined the room!`, isSystem: true },
       ],
-      otherUsers: [...state.otherUsers, { connectionId, name }],
+      otherUsers: [
+        ...state.otherUsers,
+        {
+          connectionId,
+          name,
+          peerConnection: null,
+          localTracksAreAdded: false,
+        },
+      ],
     }));
   });
 
@@ -109,17 +125,156 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     });
   });
 
+  const createPeerConnection = (connectionId: string) => {
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun.l.google.com:5349" },
+        { urls: "stun:stun1.l.google.com:3478" },
+        { urls: "stun:stun1.l.google.com:5349" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:5349" },
+        { urls: "stun:stun3.l.google.com:3478" },
+        { urls: "stun:stun3.l.google.com:5349" },
+        { urls: "stun:stun4.l.google.com:19302" },
+        { urls: "stun:stun4.l.google.com:5349" },
+      ],
+    });
+
+    pc.addEventListener("negotiationneeded", async () => {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await connection.send(
+        "SendOffer",
+        connectionId,
+        JSON.stringify(pc.localDescription)
+      );
+    });
+
+    pc.addEventListener("icecandidate", async (event) => {
+      if (event.candidate) {
+        await connection.send(
+          "SendIceCandidate",
+          connectionId,
+          JSON.stringify(event.candidate)
+        );
+      }
+    });
+
+    pc.addEventListener("track", async (event) => {
+      store.setState((state) => ({
+        otherUsers: state.otherUsers.map((x) => {
+          if (x.connectionId === connectionId) {
+            x.stream = event.streams[0];
+          }
+          return x;
+        }),
+      }));
+    });
+
+    return pc;
+  };
+
+  connection.on(
+    "ReceiveIceCandidate",
+    async (fromConnectionId: string, candidateData: string) => {
+      const candidate = new RTCIceCandidate(JSON.parse(candidateData));
+      const user = store
+        .getState()
+        .otherUsers.find((x) => x.connectionId === fromConnectionId);
+
+      if (user && user.peerConnection) {
+        user.peerConnection.addIceCandidate(candidate);
+      }
+    }
+  );
+
+  connection.on(
+    "ReceiveOffer",
+    async (fromConnectionId: string, sdpData: string) => {
+      const user = store
+        .getState()
+        .otherUsers.find((x) => x.connectionId === fromConnectionId);
+
+      if (!user) {
+        // TODO: sync
+        return;
+      }
+
+      if (!user.peerConnection) {
+        user.peerConnection = createPeerConnection(connection.connectionId!);
+      }
+
+      const sdp = new RTCSessionDescription(JSON.parse(sdpData));
+      await user.peerConnection.setRemoteDescription(sdp);
+      const answer = await user.peerConnection.createAnswer();
+      await user.peerConnection.setLocalDescription(answer);
+      await connection.send(
+        "SendAnswer",
+        fromConnectionId,
+        JSON.stringify(user.peerConnection.localDescription)
+      );
+    }
+  );
+
+  connection.on(
+    "ReceiveAnswer",
+    async (fromConnectionId: string, answerData: string) => {
+      const description = new RTCSessionDescription(JSON.parse(answerData));
+
+      const user = store
+        .getState()
+        .otherUsers.find((x) => x.connectionId === fromConnectionId);
+      if (user && user.peerConnection) {
+        user.peerConnection.setRemoteDescription(description);
+      }
+    }
+  );
+
   connection
     .start()
     .then(() => {
       store.setState({ isConnected: true });
     })
     .then(async () => {
-      const users = await connection.invoke("ConnectToRoom", roomId, username);
+      const users: { connectionId: string; name: string }[] =
+        await connection.invoke("ConnectToRoom", roomId, username);
+
       store.setState((state) => ({
-        otherUsers: [...state.otherUsers, ...users],
+        otherUsers: [
+          ...state.otherUsers,
+          ...users.map((x) => ({
+            connectionId: x.connectionId,
+            name: x.name,
+            localTracksAreAdded: false,
+            peerConnection: createPeerConnection(x.connectionId),
+          })),
+        ],
       }));
     });
+
+  navigator.mediaDevices
+    .getUserMedia({
+      audio: true,
+      video: true,
+    })
+    .then((stream) => {
+      store.setState(() => ({ localStream: stream }));
+    });
+
+  store.subscribe((state) => {
+    if (!state.localStream) return;
+    const tracks = state.localStream.getTracks();
+
+    for (const user of state.otherUsers) {
+      if (user.peerConnection && !user.localTracksAreAdded) {
+        for (const track of tracks) {
+          user.peerConnection.addTrack(track, state.localStream);
+          user.localTracksAreAdded = true;
+        }
+      }
+    }
+  });
 
   return store;
 };

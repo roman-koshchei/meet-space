@@ -17,9 +17,9 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { getColorByInitial, getInitials } from "~/helper";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import ParticipantCard from "~/components/participantCard";
+import ParticipantCard from "~/components/ParticipantCard";
 import { cn } from "~/lib/utils";
 import { useRoomStore } from "~/store/room";
 
@@ -54,8 +54,6 @@ type Control = {
 export default function MeetingArea({
   activeTab,
   setActiveTab,
-  username,
-  localVideoRef,
   isMicOn,
   setIsMicOn,
   isVideoOn,
@@ -67,217 +65,55 @@ export default function MeetingArea({
   roomId,
 }: Props) {
   const [showCopiedTooltip, setShowCopiedTooltip] = useState(false);
-  const [isSharingScreen, setIsSharingScreen] = useState(false);
   const navigate = useNavigate();
 
   const participants = useRoomStore((state) => state.otherUsers);
-
-  // Handle media controls
-  const toggleMic = () => {
-    if (!localStreamRef.current) {
-      console.log("Initializing stream...");
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((stream) => {
-          localStreamRef.current = stream;
-          const audioTrack = stream.getAudioTracks()[0];
-          if (audioTrack) {
-            audioTrack.enabled = true;
-            setIsMicOn(true);
-          }
-        })
-        .catch((err) => console.error("Error initializing audio:", err));
-      return;
-    }
-
-    const audioTrack = localStreamRef.current.getAudioTracks()[0];
-    if (audioTrack) {
-      audioTrack.enabled = !audioTrack.enabled;
-      setIsMicOn(audioTrack.enabled);
-    } else {
-      console.log("No audio track available");
-    }
-  };
-
-  const toggleVideo = async () => {
-    if (
-      !localStreamRef.current ||
-      !localStreamRef.current.getVideoTracks().length
-    ) {
-      try {
-        console.log("Initializing video stream...");
-        const videoStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false,
-        });
-
-        const videoTrack = videoStream.getVideoTracks()[0];
-
-        if (localStreamRef.current) {
-          localStreamRef.current.addTrack(videoTrack);
-        } else {
-          localStreamRef.current = videoStream;
-        }
-
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = localStreamRef.current;
-        }
-
-        videoTrack.enabled = true;
-        setIsVideoOn(true);
-        console.log("Video track initialized:", videoTrack.enabled);
-      } catch (err) {
-        console.error("Error initializing video:", err);
-        setIsVideoOn(false);
-        return;
-      }
-    } else {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      if (videoTrack) {
-        if (!isVideoOn) {
-          videoTrack.enabled = true;
-          setIsVideoOn(true);
-        } else {
-          videoTrack.enabled = false;
-          videoTrack.stop();
-          setIsVideoOn(false);
-
-          localStreamRef.current.removeTrack(videoTrack);
-
-          if (localVideoRef.current) {
-            localVideoRef.current.srcObject = localStreamRef.current;
-          }
-        }
-        console.log("Video track toggled. New state:", videoTrack.enabled);
-      }
-    }
-  };
-
-  const toggleScreenShare = async () => {
-    if (!isSharingScreen) {
-      try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-        });
-
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = screenStream;
-        }
-
-        const screenTrack = screenStream.getVideoTracks()[0];
-
-        Object.values(peerConnections.current).forEach((pc: any) => {
-          const sender = pc
-            .getSenders()
-            .find((s: RTCRtpSender) => s.track?.kind === "video");
-          if (sender) {
-            sender.replaceTrack(screenTrack);
-          }
-        });
-
-        screenTrack.addEventListener("ended", async () => {
-          setIsSharingScreen(false);
-          if (isVideoOn && localStreamRef.current) {
-            const videoTrack = localStreamRef.current.getVideoTracks()[0];
-            if (localVideoRef.current) {
-              localVideoRef.current.srcObject = localStreamRef.current;
-            }
-            Object.values(peerConnections.current).forEach((pc: any) => {
-              const sender = pc
-                .getSenders()
-                .find((s: RTCRtpSender) => s.track?.kind === "video");
-              if (sender && videoTrack) {
-                sender.replaceTrack(videoTrack);
-              }
-            });
-          }
-        });
-
-        setIsSharingScreen(true);
-      } catch (err) {
-        console.error("Error sharing screen:", err);
-        setIsSharingScreen(false);
-      }
-    } else {
-      await stopScreenSharing();
-      setIsSharingScreen(false);
-    }
-  };
-
-  const stopScreenSharing = async () => {
-    if (localStreamRef.current && localVideoRef.current) {
-      localVideoRef.current.srcObject = localStreamRef.current;
-
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-
-      await Promise.all(
-        Object.values(peerConnections.current).map(async (pc: any) => {
-          const sender = pc
-            .getSenders()
-            .find((s: RTCRtpSender) => s.track?.kind === "video");
-          if (sender && videoTrack) {
-            await sender.replaceTrack(videoTrack);
-          }
-        })
-      );
-    }
-  };
+  const username = useRoomStore((state) => state.username);
+  const localStream = useRoomStore((state) => state.localStream);
 
   const handleEndCall = () => {
-    // Stop all media tracks
-    if (localStreamRef.current) {
-      localStreamRef.current
-        .getTracks()
-        .forEach((track: MediaStreamTrack) => track.stop());
-    }
-
-    // Close all peer connections
-    Object.keys(peerConnections.current).forEach((userId) => {
-      // closePeerConnection(userId);
-    });
-
     navigate("/");
   };
 
-  const copyIdToClipboard = () => {
-    if (roomId) {
-      navigator.clipboard
-        .writeText(roomId)
-        .then(() => {
-          setShowCopiedTooltip(true);
-          setTimeout(() => setShowCopiedTooltip(false), 2000);
-        })
-        .catch((err) => {
-          console.error("Error copying Room ID:", err);
-        });
-    }
-  };
+  // const copyIdToClipboard = () => {
+  //   if (roomId) {
+  //     navigator.clipboard
+  //       .writeText(roomId)
+  //       .then(() => {
+  //         setShowCopiedTooltip(true);
+  //         setTimeout(() => setShowCopiedTooltip(false), 2000);
+  //       })
+  //       .catch((err) => {
+  //         console.error("Error copying Room ID:", err);
+  //       });
+  //   }
+  // };
 
   const controls: Control[] = [
-    {
-      icon: (isOn: boolean | undefined) => (isOn ? <Mic /> : <MicOff />),
-      variant: (isOn: boolean) => (isOn ? "outline" : "destructive"),
-      onClick: toggleMic,
-      isActive: isMicOn,
-    },
-    {
-      icon: (isOn: boolean | undefined) => (isOn ? <Video /> : <VideoOff />),
-      variant: (isOn: boolean) => (isOn ? "outline" : "destructive"),
-      onClick: toggleVideo,
-      isActive: isVideoOn,
-    },
-    {
-      icon: () => <Share2 />,
-      variant: () => "outline",
-      onClick: copyIdToClipboard,
-      isTooltip: true,
-    },
-    {
-      icon: () => <Airplay />,
-      variant: (isOn: boolean) => (isOn ? "default" : "outline"),
-      onClick: toggleScreenShare,
-      isActive: isSharingScreen,
-    },
+    // {
+    //   icon: (isOn: boolean | undefined) => (isOn ? <Mic /> : <MicOff />),
+    //   variant: (isOn: boolean) => (isOn ? "outline" : "destructive"),
+    //   onClick: toggleMic,
+    //   isActive: isMicOn,
+    // },
+    // {
+    //   icon: (isOn: boolean | undefined) => (isOn ? <Video /> : <VideoOff />),
+    //   variant: (isOn: boolean) => (isOn ? "outline" : "destructive"),
+    //   onClick: toggleVideo,
+    //   isActive: isVideoOn,
+    // },
+    // {
+    //   icon: () => <Share2 />,
+    //   variant: () => "outline",
+    //   onClick: copyIdToClipboard,
+    //   isTooltip: true,
+    // },
+    // {
+    //   icon: () => <Airplay />,
+    //   variant: (isOn: boolean) => (isOn ? "default" : "outline"),
+    //   onClick: toggleScreenShare,
+    //   isActive: isSharingScreen,
+    // },
     {
       icon: () => <MessageSquare />,
       variant: (isOn: boolean) => (isOn ? "default" : "outline"),
@@ -302,85 +138,21 @@ export default function MeetingArea({
       {/* Video grid */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-20">
         {/* Local video */}
-        <div className="relative rounded-xl overflow-hidden shadow-lg border-2 border-blue-400 dark:border-blue-600 bg-white dark:bg-gray-900 aspect-video">
-          <video
-            ref={localVideoRef}
-            autoPlay
-            muted
-            playsInline
-            className={cn(
-              "w-full h-full object-cover transform scale-x-[-1]",
-              isVideoOn || isSharingScreen ? "opacity-100" : "opacity-0"
-            )}
-          />
-
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70 pointer-events-none" />
-
-          <div className="absolute top-3 left-3">
-            <div className="px-2 py-1 bg-blue-500/20 backdrop-blur-sm rounded-md text-xs text-white font-medium">
-              Your View
-            </div>
-          </div>
-
-          <div className="absolute bottom-0 inset-x-0 p-3 flex items-center justify-between z-10">
-            <div className="flex items-center space-x-2">
-              <span className="text-white font-medium text-sm px-3 py-1 rounded-full bg-blue-500/70 backdrop-blur-sm">
-                {username} (You)
-              </span>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <div
-                className={cn(
-                  "w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-sm",
-                  isMicOn ? "bg-black/40" : "bg-red-500/80"
-                )}
-              >
-                {isMicOn ? (
-                  <Mic className="w-4 h-4 text-white" />
-                ) : (
-                  <MicOff className="w-4 h-4 text-white" />
-                )}
-              </div>
-
-              <div
-                className={cn(
-                  "w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-sm",
-                  isVideoOn ? "bg-black/40" : "bg-red-500/80"
-                )}
-              >
-                {isVideoOn ? (
-                  <Video className="w-4 h-4 text-white" />
-                ) : (
-                  <VideoOff className="w-4 h-4 text-white" />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {!isVideoOn && !isSharingScreen && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
-              <div className="relative">
-                <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 opacity-30 blur-xl animate-pulse" />
-                <Avatar className="h-24 w-24 border-2 border-white dark:border-gray-700 shadow-md">
-                  <AvatarFallback
-                    className={`text-2xl font-medium ${getColorByInitial(
-                      username
-                    )}`}
-                  >
-                    {getInitials(username)}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-            </div>
-          )}
-        </div>
+        <ParticipantCard
+          stream={localStream}
+          name={username}
+          hasVideo={true}
+          muted={true}
+        />
 
         {/* Remote videos */}
         {participants.map((participant) => (
           <ParticipantCard
             key={participant.connectionId}
-            name={participant.connectionId}
+            name={participant.name}
+            hasVideo={true}
+            muted={false}
+            stream={participant.stream}
           />
         ))}
       </div>
