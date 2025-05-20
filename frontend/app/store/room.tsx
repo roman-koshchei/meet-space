@@ -1,7 +1,7 @@
 import { createStore, useStore } from "zustand";
 import { loadUsername } from "./session";
 import * as SignalR from "@microsoft/signalr";
-import { createContext, useContext, useMemo, useRef } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef } from "react";
 import type { StoreApi } from "zustand";
 
 type Message = {
