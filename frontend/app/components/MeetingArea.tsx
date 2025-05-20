@@ -1,14 +1,4 @@
-import {
-  Airplay,
-  MessageSquare,
-  Mic,
-  MicOff,
-  PhoneOff,
-  Share2,
-  Video,
-  VideoOff,
-} from "lucide-react";
-import { Avatar, AvatarFallback } from "~/components/ui/avatar";
+import { MessageSquare, PhoneOff } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
   Tooltip,
@@ -16,8 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { getColorByInitial, getInitials } from "~/helper";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import ParticipantCard from "~/components/ParticipantCard";
 import { cn } from "~/lib/utils";
@@ -51,27 +40,17 @@ type Control = {
   isTooltip?: boolean;
 };
 
-export default function MeetingArea({
-  activeTab,
-  setActiveTab,
-  isMicOn,
-  setIsMicOn,
-  isVideoOn,
-  setIsVideoOn,
-  remoteVideoRefs,
-  localStreamRef,
-  // closePeerConnection,
-  peerConnections,
-  roomId,
-}: Props) {
+export default function MeetingArea({ activeTab, setActiveTab }: Props) {
   const [showCopiedTooltip, setShowCopiedTooltip] = useState(false);
   const navigate = useNavigate();
 
   const participants = useRoomStore((state) => state.otherUsers);
   const username = useRoomStore((state) => state.username);
   const localStream = useRoomStore((state) => state.localStream);
+  const leaveRoom = useRoomStore((state) => state.leaveRoom);
 
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
+    await leaveRoom();
     navigate("/");
   };
 

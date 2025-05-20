@@ -19,7 +19,7 @@ export default function ParticipantCard({
 
   useEffect(() => {
     if (videoRef.current && stream) {
-      console.log("ParticipantCard", videoRef.current, stream);
+      // console.log("ParticipantCard", videoRef.current, stream);
       videoRef.current.srcObject = stream;
     }
   }, [stream]);

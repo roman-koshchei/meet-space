@@ -11,21 +11,6 @@ export default function ChatArea({ activeTab }: { activeTab: string }) {
   const sendMessage = useRoomStore((state) => state.sendMessage);
   const otherUsers = useRoomStore((state) => state.otherUsers);
 
-  const handleSendMessage = async (newMessage: string) => {
-    const message = newMessage.trim();
-    if (message == "") return;
-
-    try {
-      const messageObj = {
-        text: message,
-        sender: username,
-      };
-      await sendMessage(JSON.stringify(messageObj));
-    } catch (err) {
-      console.error("Error sending message:", err);
-    }
-  };
-
   return (
     <div
       className={`w-full md:w-80 flex-1 md:flex-none overflow-y-auto lg:w-96 bg-white shadow-md p-4 flex ${
@@ -46,7 +31,7 @@ export default function ChatArea({ activeTab }: { activeTab: string }) {
         </TabsList>
 
         {/* Chat content */}
-        <MessageArea sendMessage={handleSendMessage} />
+        <MessageArea />
 
         {/* Participants list */}
         <TabsContent
@@ -91,11 +76,8 @@ export default function ChatArea({ activeTab }: { activeTab: string }) {
   );
 }
 
-function MessageArea({
-  sendMessage,
-}: {
-  sendMessage: (message: string) => Promise<void>;
-}) {
+function MessageArea() {
+  const sendMessage = useRoomStore((state) => state.sendMessage);
   const username = useRoomStore((state) => state.username);
   const messages = useRoomStore((state) => state.messages);
 
@@ -157,11 +139,7 @@ function MessageArea({
           placeholder="Type a message..."
           className="flex-1 p-2 border border-gray-300 rounded-l"
         />
-        <Button
-          onClick={handleSendMessage}
-          className="rounded-l-none h-full"
-          type="submit"
-        >
+        <Button className="rounded-l-none h-full" type="submit">
           Send
         </Button>
       </form>

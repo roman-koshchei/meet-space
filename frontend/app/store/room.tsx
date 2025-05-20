@@ -30,6 +30,7 @@ type RoomStore = {
   localStream: MediaStream | null | undefined;
 
   sendMessage: (message: string) => Promise<void>;
+  leaveRoom: () => Promise<void>;
 };
 
 const createRoomStore = (hubUrl: string, roomId: string) => {
@@ -61,10 +62,22 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     localStream: null,
 
     sendMessage: async (message) => {
-      connection.send("SendMessage", roomId, message);
+      console.log("SendMessage", roomId, message);
+      connection.send(
+        "SendMessage",
+        roomId,
+        JSON.stringify({ text: message, sender: username })
+      );
       set((state) => ({
-        messages: [...state.messages, { text: message, isSystem: false }],
+        messages: [
+          ...state.messages,
+          { text: message, sender: "You", isSystem: false },
+        ],
       }));
+    },
+
+    leaveRoom: async () => {
+      await connection.send("LeaveRoom");
     },
   }));
 
@@ -144,7 +157,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     });
 
     pc.addEventListener("negotiationneeded", async () => {
-      console.log("negotiationneeded");
+      // console.log("negotiationneeded");
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       await connection.send(
@@ -155,7 +168,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     });
 
     pc.addEventListener("icecandidate", async (event) => {
-      console.log("icecandidate");
+      // console.log("icecandidate");
       if (event.candidate) {
         await connection.send(
           "SendIceCandidate",
@@ -166,7 +179,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     });
 
     pc.addEventListener("track", async (event) => {
-      console.log("track");
+      // console.log("track");
       store.setState((state) => ({
         otherUsers: state.otherUsers.map((x) => {
           if (x.connectionId === connectionId) {
@@ -200,7 +213,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
   connection.on(
     "ReceiveOffer",
     async (fromConnectionId: string, sdpData: string) => {
-      console.log("ReceiveOffer", fromConnectionId);
+      // console.log("ReceiveOffer", fromConnectionId);
 
       const user = store
         .getState()
@@ -230,7 +243,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
   connection.on(
     "ReceiveAnswer",
     async (fromConnectionId: string, answerData: string) => {
-      console.log("ReceiveAnswer", fromConnectionId);
+      // console.log("ReceiveAnswer", fromConnectionId);
 
       const description = new RTCSessionDescription(JSON.parse(answerData));
 
