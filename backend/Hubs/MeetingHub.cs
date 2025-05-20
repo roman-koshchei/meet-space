@@ -29,6 +29,11 @@ public class MeetingHub(MeetingHubData meetingHubData) : Hub
         await Clients.Client(connectionId).SendAsync("ReceiveIceCandidate", Context.ConnectionId, candidateData);
     }
 
+    public async Task SendVideoStatus(string roomId, bool enabled)
+    {
+        await Clients.OthersInGroup(roomId).SendAsync("ReceiveVideoStatus", Context.ConnectionId, enabled);
+    }
+
     // Chat
     public async Task SendMessage(string roomId, string message)
     {
