@@ -3,6 +3,7 @@ import { loadUsername } from "./session";
 import * as SignalR from "@microsoft/signalr";
 import { createContext, useContext, useEffect, useMemo, useRef } from "react";
 import type { StoreApi } from "zustand";
+import { debugLog } from "~/lib/utils";
 
 type Message = {
   text: string;
@@ -16,6 +17,7 @@ export type User = {
   peerConnection: RTCPeerConnection | null;
   localTracksAreAdded: boolean;
   stream?: MediaStream | null;
+  videoEnabled: boolean;
 };
 
 type RoomStore = {
@@ -28,8 +30,13 @@ type RoomStore = {
 
   // localPeerConnection: RTCPeerConnection;
   localStream: MediaStream | null | undefined;
+  videoEnabled: boolean;
+  toggleVideo: () => Promise<void>;
+  micEnabled: boolean;
+  toggleMic: () => Promise<void>;
 
   sendMessage: (message: string) => Promise<void>;
+
   leaveRoom: () => Promise<void>;
 };
 
@@ -51,7 +58,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     .withAutomaticReconnect()
     .build();
 
-  const store = createStore<RoomStore>((set) => ({
+  const store = createStore<RoomStore>((set, get) => ({
     username: username,
     messages: [],
     otherUsers: [],
@@ -62,7 +69,8 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     localStream: null,
 
     sendMessage: async (message) => {
-      console.log("SendMessage", roomId, message);
+      debugLog("SendMessage", roomId, message);
+
       connection.send(
         "SendMessage",
         roomId,
@@ -78,26 +86,86 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
 
     leaveRoom: async () => {
       await connection.send("LeaveRoom");
+      if (connection.state === SignalR.HubConnectionState.Connected) {
+        connection.stop();
+        set(() => ({ isConnected: false }));
+      }
+
+      const state = get();
+      state.otherUsers.forEach((user) => {
+        if (user.peerConnection) {
+          user.peerConnection.close();
+        }
+      });
+      if (state.localStream) {
+        state.localStream.getTracks().forEach((track) => track.stop());
+      }
+      set(() => ({
+        messages: [],
+        otherUsers: [],
+        localStream: null,
+        videoEnabled: false,
+        micEnabled: false,
+      }));
+    },
+
+    videoEnabled: false,
+    toggleVideo: async () => {
+      const state = store.getState();
+      if (state.localStream) {
+        const newEnabled = !state.videoEnabled;
+        state.localStream.getVideoTracks().forEach((track) => {
+          track.enabled = newEnabled;
+        });
+        set(() => ({ videoEnabled: newEnabled }));
+        await connection.send("SendVideoStatus", roomId, newEnabled);
+      }
+    },
+
+    micEnabled: false,
+    toggleMic: async () => {
+      const state = store.getState();
+      if (state.localStream) {
+        const newEnabled = !state.micEnabled;
+        state.localStream.getAudioTracks().forEach((track) => {
+          track.enabled = newEnabled;
+        });
+        set(() => ({ micEnabled: newEnabled }));
+      }
     },
   }));
 
   connection.onreconnecting(() => {
-    console.log("Reconnecting to SignalR hub...");
+    debugLog("Reconnecting to SignalR hub...");
     store.setState({ isConnected: false });
   });
 
   connection.onreconnected(() => {
-    console.log("Reconnected to SignalR hub");
+    debugLog("Reconnected to SignalR hub");
     store.setState({ isConnected: true });
   });
 
   connection.onclose(() => {
-    console.log("Connection closed");
+    debugLog("Connection closed");
     store.setState({ isConnected: false });
   });
 
+  connection.on(
+    "ReceiveVideoStatus",
+    (connectionId: string, enabled: boolean) => {
+      store.setState((state) => ({
+        otherUsers: state.otherUsers.map((x) => {
+          if (x.connectionId === connectionId) {
+            x.videoEnabled = enabled;
+          }
+          return x;
+        }),
+      }));
+    }
+  );
+
   connection.on("UserJoinedRoom", (connectionId: string, name: string) => {
-    console.log("UserJoinedRoom", connectionId, name);
+    debugLog("UserJoinedRoom", connectionId, name);
     store.setState((state) => ({
       messages: [
         ...state.messages,
@@ -110,13 +178,14 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
           name,
           peerConnection: createPeerConnection(connectionId),
           localTracksAreAdded: false,
+          videoEnabled: false,
         },
       ],
     }));
   });
 
   connection.on("ReceiveMessage", (message: string) => {
-    console.log("ReceiveMessage", message);
+    debugLog("ReceiveMessage", message);
     try {
       const parsedMessage = JSON.parse(message);
       store.setState((state) => ({
@@ -138,7 +207,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
   });
 
   connection.on("UserLeft", (connectionId: string) => {
-    console.log("UserLeft", connectionId);
+    debugLog("UserLeft", connectionId);
     store.setState((state) => {
       return {
         otherUsers: state.otherUsers.filter(
@@ -157,7 +226,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     });
 
     pc.addEventListener("negotiationneeded", async () => {
-      // console.log("negotiationneeded");
+      // debugLog("negotiationneeded");
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       await connection.send(
@@ -168,7 +237,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     });
 
     pc.addEventListener("icecandidate", async (event) => {
-      // console.log("icecandidate");
+      // debugLog("icecandidate");
       if (event.candidate) {
         await connection.send(
           "SendIceCandidate",
@@ -179,11 +248,11 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     });
 
     pc.addEventListener("track", async (event) => {
-      // console.log("track");
+      // debugLog("track");
       store.setState((state) => ({
         otherUsers: state.otherUsers.map((x) => {
           if (x.connectionId === connectionId) {
-            console.log(x.connectionId, event.streams[0]);
+            debugLog(x.connectionId, event.streams[0]);
             x.stream = event.streams[0];
           }
           return x;
@@ -197,7 +266,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
   connection.on(
     "ReceiveIceCandidate",
     async (fromConnectionId: string, candidateData: string) => {
-      // console.log("ReceiveIceCandidate", fromConnectionId, candidateData);
+      // debugLog("ReceiveIceCandidate", fromConnectionId, candidateData);
 
       const candidate = new RTCIceCandidate(JSON.parse(candidateData));
       const user = store
@@ -213,7 +282,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
   connection.on(
     "ReceiveOffer",
     async (fromConnectionId: string, sdpData: string) => {
-      // console.log("ReceiveOffer", fromConnectionId);
+      // debugLog("ReceiveOffer", fromConnectionId);
 
       const user = store
         .getState()
@@ -243,7 +312,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
   connection.on(
     "ReceiveAnswer",
     async (fromConnectionId: string, answerData: string) => {
-      // console.log("ReceiveAnswer", fromConnectionId);
+      // debugLog("ReceiveAnswer", fromConnectionId);
 
       const description = new RTCSessionDescription(JSON.parse(answerData));
 
@@ -265,7 +334,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
       const users: { connectionId: string; name: string }[] =
         await connection.invoke("ConnectToRoom", roomId, username);
 
-      console.log(users);
+      debugLog(users);
 
       store.setState((state) => ({
         otherUsers: [
@@ -275,6 +344,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
             name: x.name,
             localTracksAreAdded: false,
             peerConnection: createPeerConnection(x.connectionId),
+            videoEnabled: true,
           })),
         ],
       }));
@@ -286,7 +356,15 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
       video: true,
     })
     .then((stream) => {
-      store.setState(() => ({ localStream: stream }));
+      // Initially disable tracks
+      stream.getTracks().forEach((track) => {
+        track.enabled = false;
+      });
+      store.setState(() => ({
+        localStream: stream,
+        videoEnabled: false,
+        micEnabled: false,
+      }));
     });
 
   store.subscribe((state) => {
@@ -317,6 +395,14 @@ export const RoomStoreProvider = ({
   if (!storeRef.current) {
     storeRef.current = createRoomStore(hubUrl, roomId);
   }
+
+  useEffect(() => {
+    debugLog(storeRef.current);
+
+    return () => {
+      debugLog("RoomStoreProvider dismounted");
+    };
+  }, [storeRef.current]);
 
   return (
     <RoomContext.Provider value={storeRef.current}>

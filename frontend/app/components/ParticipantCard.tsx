@@ -1,5 +1,4 @@
-import { MicOff, TruckIcon, Video, VideoOff } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { getColorByInitial, getInitials } from "~/helper";
 import { cn } from "~/lib/utils";
@@ -7,8 +6,8 @@ import { cn } from "~/lib/utils";
 export default function ParticipantCard({
   name,
   muted,
-  hasVideo,
   stream,
+  hasVideo,
 }: {
   name: string;
   muted: boolean;
@@ -19,10 +18,10 @@ export default function ParticipantCard({
 
   useEffect(() => {
     if (videoRef.current != null && stream) {
-      console.log("ParticipantCard", videoRef.current, stream);
+      // console.log("ParticipantCard", videoRef.current, stream);
       videoRef.current.srcObject = stream;
     }
-  }, [videoRef, stream]);
+  }, [videoRef.current, stream]);
 
   return (
     <div className="relative rounded-xl overflow-hidden shadow-lg border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 aspect-video">

@@ -1,4 +1,11 @@
-import { MessageSquare, PhoneOff } from "lucide-react";
+import {
+  MessageSquare,
+  Mic,
+  MicOff,
+  PhoneOff,
+  Video,
+  VideoOff,
+} from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
   Tooltip,
@@ -48,6 +55,10 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
   const username = useRoomStore((state) => state.username);
   const localStream = useRoomStore((state) => state.localStream);
   const leaveRoom = useRoomStore((state) => state.leaveRoom);
+  const toggleVideo = useRoomStore((state) => state.toggleVideo);
+  const videoEnabled = useRoomStore((state) => state.videoEnabled);
+  const toggleMic = useRoomStore((state) => state.toggleMic);
+  const micEnabled = useRoomStore((state) => state.micEnabled);
 
   const handleEndCall = async () => {
     await leaveRoom();
@@ -69,18 +80,18 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
   // };
 
   const controls: Control[] = [
-    // {
-    //   icon: (isOn: boolean | undefined) => (isOn ? <Mic /> : <MicOff />),
-    //   variant: (isOn: boolean) => (isOn ? "outline" : "destructive"),
-    //   onClick: toggleMic,
-    //   isActive: isMicOn,
-    // },
-    // {
-    //   icon: (isOn: boolean | undefined) => (isOn ? <Video /> : <VideoOff />),
-    //   variant: (isOn: boolean) => (isOn ? "outline" : "destructive"),
-    //   onClick: toggleVideo,
-    //   isActive: isVideoOn,
-    // },
+    {
+      icon: (isOn) => (isOn ? <Mic /> : <MicOff />),
+      variant: (isOn: boolean) => (isOn ? "outline" : "destructive"),
+      onClick: toggleMic,
+      isActive: micEnabled,
+    },
+    {
+      icon: (isOn) => (isOn ? <Video /> : <VideoOff />),
+      variant: (isOn: boolean) => (isOn ? "outline" : "destructive"),
+      onClick: toggleVideo,
+      isActive: videoEnabled,
+    },
     // {
     //   icon: () => <Share2 />,
     //   variant: () => "outline",
@@ -118,9 +129,9 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
       <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-20">
         {/* Local video */}
         <ParticipantCard
+          hasVideo={videoEnabled}
           stream={localStream}
           name={username}
-          hasVideo={true}
           muted={true}
         />
 
@@ -129,7 +140,7 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
           <ParticipantCard
             key={participant.connectionId}
             name={participant.name}
-            hasVideo={true}
+            hasVideo={participant.videoEnabled}
             muted={false}
             stream={participant.stream}
           />
