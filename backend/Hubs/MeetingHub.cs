@@ -56,9 +56,17 @@ public class MeetingHub(MeetingHubData meetingHubData) : Hub
         return othersUsers;
     }
 
+    public async Task LeaveRoom()
+    {
+        if (meetingHubData.RoomUsers.TryRemove(Context.ConnectionId, out var userRoom))
+        {
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, userRoom.RoomId);
+            await Clients.OthersInGroup(userRoom.RoomId).SendAsync("UserLeft", Context.ConnectionId);
+        }
+    }
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        Console.WriteLine($"OnDisconnectedAsync {Context.ConnectionId}");
         if (meetingHubData.RoomUsers.TryRemove(Context.ConnectionId, out var userRoom))
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, userRoom.RoomId);
