@@ -18,11 +18,11 @@ export default function ParticipantCard({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      // console.log("ParticipantCard", videoRef.current, stream);
+    if (videoRef.current != null && stream) {
+      console.log("ParticipantCard", videoRef.current, stream);
       videoRef.current.srcObject = stream;
     }
-  }, [stream]);
+  }, [videoRef, stream]);
 
   return (
     <div className="relative rounded-xl overflow-hidden shadow-lg border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 aspect-video">
