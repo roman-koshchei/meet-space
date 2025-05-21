@@ -316,7 +316,6 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
         .otherUsers.find((x) => x.connectionId === fromConnectionId);
 
       if (!user) {
-        // TODO: sync
         return;
       }
 
@@ -348,7 +347,11 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
       const user = store
         .getState()
         .otherUsers.find((x) => x.connectionId === fromConnectionId);
-      if (user && user.peerConnection) {
+      if (
+        user &&
+        user.peerConnection &&
+        user.peerConnection.currentRemoteDescription == null
+      ) {
         user.peerConnection.setRemoteDescription(description);
       }
     }
