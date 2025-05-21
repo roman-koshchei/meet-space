@@ -297,15 +297,17 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
         user.peerConnection = createPeerConnection(connection.connectionId!);
       }
 
-      const sdp = new RTCSessionDescription(JSON.parse(sdpData));
-      await user.peerConnection.setRemoteDescription(sdp);
-      const answer = await user.peerConnection.createAnswer();
-      await user.peerConnection.setLocalDescription(answer);
-      await connection.send(
-        "SendAnswer",
-        fromConnectionId,
-        JSON.stringify(user.peerConnection.localDescription)
-      );
+      if (user.peerConnection.connectionState != "connected") {
+        const sdp = new RTCSessionDescription(JSON.parse(sdpData));
+        await user.peerConnection.setRemoteDescription(sdp);
+        const answer = await user.peerConnection.createAnswer();
+        await user.peerConnection.setLocalDescription(answer);
+        await connection.send(
+          "SendAnswer",
+          fromConnectionId,
+          JSON.stringify(user.peerConnection.localDescription)
+        );
+      }
     }
   );
 
@@ -313,8 +315,6 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     "ReceiveAnswer",
     async (fromConnectionId: string, answerData: string) => {
       debugLog("ReceiveAnswer", fromConnectionId);
-
-      const description = new RTCSessionDescription(JSON.parse(answerData));
 
       const user = store
         .getState()
@@ -324,7 +324,8 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
         user.peerConnection &&
         user.peerConnection.connectionState != "connected"
       ) {
-        user.peerConnection.setRemoteDescription(description);
+        const description = new RTCSessionDescription(JSON.parse(answerData));
+        await user.peerConnection.setRemoteDescription(description);
       }
     }
   );
