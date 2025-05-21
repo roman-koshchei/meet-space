@@ -47,7 +47,7 @@ type Control = {
   isTooltip?: boolean;
 };
 
-export default function MeetingArea({ activeTab, setActiveTab, roomId }: Props) {
+export default function MeetingArea({ activeTab, setActiveTab }: Props) {
   const [showCopiedTooltip, setShowCopiedTooltip] = useState(false);
   const navigate = useNavigate();
 
@@ -59,6 +59,7 @@ export default function MeetingArea({ activeTab, setActiveTab, roomId }: Props) 
   const videoEnabled = useRoomStore((state) => state.videoEnabled);
   const toggleMic = useRoomStore((state) => state.toggleMic);
   const micEnabled = useRoomStore((state) => state.micEnabled);
+  const roomId = useRoomStore((state) => state.roomId);
 
   const handleEndCall = async () => {
     await leaveRoom();

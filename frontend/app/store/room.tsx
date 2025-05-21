@@ -25,6 +25,7 @@ type RoomStore = {
   username: string;
   messages: Message[];
   otherUsers: User[];
+  roomId: string;
 
   connection: SignalR.HubConnection;
   isConnected: boolean;
@@ -63,6 +64,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     username: username,
     messages: [],
     otherUsers: [],
+    roomId: roomId,
 
     connection,
     isConnected: false,
@@ -349,7 +351,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     })
     .then(async () => {
       const users: { connectionId: string; name: string; micEnabled: boolean; videoEnabled: boolean }[] =
-          await connection.invoke("ConnectToRoom", roomId, username, true, true);
+          await connection.invoke("ConnectToRoom", roomId, username, false, false);
 
       debugLog("users", users);
 
