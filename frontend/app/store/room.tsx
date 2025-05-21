@@ -301,17 +301,15 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
         );
       }
 
-      if (user.peerConnection.connectionState != "connected") {
-        const sdp = new RTCSessionDescription(JSON.parse(sdpData));
-        await user.peerConnection.setRemoteDescription(sdp);
-        const answer = await user.peerConnection.createAnswer();
-        await user.peerConnection.setLocalDescription(answer);
-        await connection.send(
-          "SendAnswer",
-          fromConnectionId,
-          JSON.stringify(user.peerConnection.localDescription)
-        );
-      }
+      const sdp = new RTCSessionDescription(JSON.parse(sdpData));
+      await user.peerConnection.setRemoteDescription(sdp);
+      const answer = await user.peerConnection.createAnswer();
+      await user.peerConnection.setLocalDescription(answer);
+      await connection.send(
+        "SendAnswer",
+        fromConnectionId,
+        JSON.stringify(user.peerConnection.localDescription)
+      );
     }
   );
 
@@ -323,11 +321,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
       const user = store
         .getState()
         .otherUsers.find((x) => x.connectionId === fromConnectionId);
-      if (
-        user &&
-        user.peerConnection &&
-        user.peerConnection.connectionState != "connected"
-      ) {
+      if (user && user.peerConnection) {
         const description = new RTCSessionDescription(JSON.parse(answerData));
         await user.peerConnection.setRemoteDescription(description);
       }
