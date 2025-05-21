@@ -282,7 +282,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
   connection.on(
     "ReceiveOffer",
     async (fromConnectionId: string, sdpData: string) => {
-      // debugLog("ReceiveOffer", fromConnectionId);
+      debugLog("ReceiveOffer", fromConnectionId);
 
       const user = store
         .getState()
@@ -312,14 +312,18 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
   connection.on(
     "ReceiveAnswer",
     async (fromConnectionId: string, answerData: string) => {
-      // debugLog("ReceiveAnswer", fromConnectionId);
+      debugLog("ReceiveAnswer", fromConnectionId);
 
       const description = new RTCSessionDescription(JSON.parse(answerData));
 
       const user = store
         .getState()
         .otherUsers.find((x) => x.connectionId === fromConnectionId);
-      if (user && user.peerConnection) {
+      if (
+        user &&
+        user.peerConnection &&
+        user.peerConnection.connectionState != "connected"
+      ) {
         user.peerConnection.setRemoteDescription(description);
       }
     }
