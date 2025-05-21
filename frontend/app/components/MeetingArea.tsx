@@ -133,6 +133,7 @@ export default function MeetingArea({ activeTab, setActiveTab, roomId }: Props) 
           hasMic={micEnabled}
           stream={localStream}
           name={username}
+          muted={true}
         />
 
         {/* Remote videos */}
@@ -143,6 +144,7 @@ export default function MeetingArea({ activeTab, setActiveTab, roomId }: Props) 
             hasVideo={participant.videoEnabled}
             hasMic={participant.micEnabled}
             stream={participant.stream}
+            muted={participant.micEnabled}
           />
         ))}
       </div>

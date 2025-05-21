@@ -9,11 +9,13 @@ export default function ParticipantCard({
   stream,
   hasVideo,
   hasMic,
+  muted,
 }: {
   name: string;
   hasVideo: boolean;
   stream?: MediaStream | null;
   hasMic: boolean;
+  muted: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -31,7 +33,7 @@ export default function ParticipantCard({
       <video
         ref={videoRef}
         autoPlay
-        muted={hasMic}
+        muted={muted}
         className={cn(
           "w-full h-full object-cover transition-opacity duration-300",
           hasVideo ? "opacity-100" : "opacity-0"
