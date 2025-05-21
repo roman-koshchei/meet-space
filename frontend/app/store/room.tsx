@@ -176,7 +176,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
         {
           connectionId,
           name,
-          peerConnection: createPeerConnection(connectionId),
+          peerConnection: createPeerConnection(connectionId, false),
           localTracksAreAdded: false,
           videoEnabled: false,
         },
@@ -217,24 +217,25 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     });
   });
 
-  const createPeerConnection = (connectionId: string) => {
+  const createPeerConnection = (connectionId: string, negotiate: boolean) => {
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
         { urls: "stun:stun.l.google.com:5349" },
       ],
     });
-
-    pc.addEventListener("negotiationneeded", async () => {
-      // debugLog("negotiationneeded");
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      await connection.send(
-        "SendOffer",
-        connectionId,
-        JSON.stringify(pc.localDescription)
-      );
-    });
+    if (negotiate) {
+      pc.addEventListener("negotiationneeded", async () => {
+        // debugLog("negotiationneeded");
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await connection.send(
+          "SendOffer",
+          connectionId,
+          JSON.stringify(pc.localDescription)
+        );
+      });
+    }
 
     pc.addEventListener("icecandidate", async (event) => {
       // debugLog("icecandidate");
@@ -294,7 +295,10 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
       }
 
       if (!user.peerConnection) {
-        user.peerConnection = createPeerConnection(connection.connectionId!);
+        user.peerConnection = createPeerConnection(
+          connection.connectionId!,
+          false
+        );
       }
 
       if (user.peerConnection.connectionState != "connected") {
@@ -348,7 +352,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
             connectionId: x.connectionId,
             name: x.name,
             localTracksAreAdded: false,
-            peerConnection: createPeerConnection(x.connectionId),
+            peerConnection: createPeerConnection(x.connectionId, true),
             videoEnabled: true,
           })),
         ],
