@@ -8,7 +8,6 @@ import { useRoomStore } from "~/store/room";
 
 export default function ChatArea({ activeTab }: { activeTab: string }) {
   const username = useRoomStore((state) => state.username);
-  const sendMessage = useRoomStore((state) => state.sendMessage);
   const otherUsers = useRoomStore((state) => state.otherUsers);
 
   return (
@@ -86,6 +85,7 @@ function MessageArea() {
 
   const handleSendMessage = async () => {
     await sendMessage(newMessage);
+    setNewMessage("");
   };
 
   useEffect(() => {

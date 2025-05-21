@@ -22,19 +22,6 @@ import { useRoomStore } from "~/store/room";
 type Props = {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  username: string;
-  localVideoRef: React.RefObject<HTMLVideoElement | null>;
-  isMicOn: boolean;
-  setIsMicOn: (isOn: boolean) => void;
-  isVideoOn: boolean;
-  setIsVideoOn: (isOn: boolean) => void;
-  remoteVideoRefs: React.RefObject<{
-    [userId: string]: HTMLVideoElement | null;
-  }>;
-  localStreamRef: React.RefObject<MediaStream | null>;
-  // closePeerConnection: (userId: string) => void;
-  peerConnections: React.RefObject<{ [key: string]: RTCPeerConnection }>;
-  roomId: string;
 };
 
 type Control = {

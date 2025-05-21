@@ -36,17 +36,7 @@ export default function RoomPage({ params: { roomId } }: Route.ComponentProps) {
 function Room({ roomId }: { roomId: string }) {
   const isConnected = useRoomStore((state) => state.isConnected);
   const username = useRoomStore((state) => state.username);
-
-  const [isMicOn, setIsMicOn] = useState(false);
-  const [isVideoOn, setIsVideoOn] = useState(false);
-
   const [activeTab, setActiveTab] = useState("meeting");
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRefs = useRef<{ [userId: string]: HTMLVideoElement | null }>(
-    {}
-  );
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const peerConnections = useRef<{ [userId: string]: RTCPeerConnection }>({});
 
   if (!isConnected || !roomId) {
     return (
@@ -80,21 +70,7 @@ function Room({ roomId }: { roomId: string }) {
         </div>
 
         {/* Meeting area - visible on desktop or when Meeting tab is active */}
-        <MeetingArea
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          username={username}
-          localVideoRef={localVideoRef}
-          isMicOn={isMicOn}
-          setIsMicOn={setIsMicOn}
-          isVideoOn={isVideoOn}
-          setIsVideoOn={setIsVideoOn}
-          remoteVideoRefs={remoteVideoRefs}
-          localStreamRef={localStreamRef}
-          // closePeerConnection={closePeerConnection}
-          peerConnections={peerConnections}
-          roomId={roomId}
-        />
+        <MeetingArea activeTab={activeTab} setActiveTab={setActiveTab} />
 
         {/* Chat area - visible on desktop or when Chat tab is active */}
         <ChatArea activeTab={activeTab} />
