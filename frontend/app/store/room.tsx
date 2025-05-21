@@ -18,12 +18,14 @@ export type User = {
   localTracksAreAdded: boolean;
   stream?: MediaStream | null;
   videoEnabled: boolean;
+  micEnabled: boolean;
 };
 
 type RoomStore = {
   username: string;
   messages: Message[];
   otherUsers: User[];
+  roomId: string;
 
   connection: SignalR.HubConnection;
   isConnected: boolean;
@@ -62,6 +64,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     username: username,
     messages: [],
     otherUsers: [],
+    roomId: roomId,
 
     connection,
     isConnected: false,
@@ -71,15 +74,15 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     sendMessage: async (message) => {
       debugLog("SendMessage", roomId, message);
 
-      connection.send(
-        "SendMessage",
-        roomId,
-        JSON.stringify({ text: message, sender: username })
+      await connection.send(
+          "SendMessage",
+          roomId,
+          JSON.stringify({text: message, sender: username})
       );
       set((state) => ({
         messages: [
           ...state.messages,
-          { text: message, sender: "You", isSystem: false },
+          { text: message, sender: username, isSystem: false },
         ],
       }));
     },
@@ -131,6 +134,7 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
           track.enabled = newEnabled;
         });
         set(() => ({ micEnabled: newEnabled }));
+        await connection.send("SendMicStatus", roomId, newEnabled);
       }
     },
   }));
@@ -164,7 +168,21 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
     }
   );
 
-  connection.on("UserJoinedRoom", (connectionId: string, name: string) => {
+  connection.on(
+      "ReceiveMicStatus",
+      (connectionId: string, enabled: boolean) => {
+        store.setState((state) => ({
+          otherUsers: state.otherUsers.map((x) => {
+            if (x.connectionId === connectionId) {
+              x.micEnabled = enabled;
+            }
+            return x;
+          }),
+        }));
+      }
+  );
+
+  connection.on("UserJoinedRoom", (connectionId: string, name: string, micEnabled: boolean, videoEnabled: boolean) => {
     debugLog("UserJoinedRoom", connectionId, name);
     store.setState((state) => ({
       messages: [
@@ -176,9 +194,10 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
         {
           connectionId,
           name,
+          videoEnabled,
+          micEnabled,
           peerConnection: createPeerConnection(connectionId),
-          localTracksAreAdded: false,
-          videoEnabled: false,
+          localTracksAreAdded: false
         },
       ],
     }));
@@ -331,10 +350,10 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
       store.setState({ isConnected: true });
     })
     .then(async () => {
-      const users: { connectionId: string; name: string }[] =
-        await connection.invoke("ConnectToRoom", roomId, username);
+      const users: { connectionId: string; name: string; micEnabled: boolean; videoEnabled: boolean }[] =
+          await connection.invoke("ConnectToRoom", roomId, username, false, false);
 
-      debugLog(users);
+      debugLog("users", users);
 
       store.setState((state) => ({
         otherUsers: [
@@ -344,7 +363,8 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
             name: x.name,
             localTracksAreAdded: false,
             peerConnection: createPeerConnection(x.connectionId),
-            videoEnabled: true,
+            videoEnabled: x.videoEnabled,
+            micEnabled: x.micEnabled,
           })),
         ],
       }));

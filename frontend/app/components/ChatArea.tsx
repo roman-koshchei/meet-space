@@ -85,7 +85,9 @@ function MessageArea() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = async () => {
+    if (newMessage.trim() === "") return;
     await sendMessage(newMessage);
+    setNewMessage("");
   };
 
   useEffect(() => {

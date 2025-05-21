@@ -2,7 +2,7 @@ import {
   MessageSquare,
   Mic,
   MicOff,
-  PhoneOff,
+  PhoneOff, Share2,
   Video,
   VideoOff,
 } from "lucide-react";
@@ -59,25 +59,26 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
   const videoEnabled = useRoomStore((state) => state.videoEnabled);
   const toggleMic = useRoomStore((state) => state.toggleMic);
   const micEnabled = useRoomStore((state) => state.micEnabled);
+  const roomId = useRoomStore((state) => state.roomId);
 
   const handleEndCall = async () => {
     await leaveRoom();
     navigate("/");
   };
 
-  // const copyIdToClipboard = () => {
-  //   if (roomId) {
-  //     navigator.clipboard
-  //       .writeText(roomId)
-  //       .then(() => {
-  //         setShowCopiedTooltip(true);
-  //         setTimeout(() => setShowCopiedTooltip(false), 2000);
-  //       })
-  //       .catch((err) => {
-  //         console.error("Error copying Room ID:", err);
-  //       });
-  //   }
-  // };
+  const copyIdToClipboard = () => {
+    if (roomId) {
+      navigator.clipboard
+        .writeText(roomId)
+        .then(() => {
+          setShowCopiedTooltip(true);
+          setTimeout(() => setShowCopiedTooltip(false), 2000);
+        })
+        .catch((err) => {
+          console.error("Error copying Room ID:", err);
+        });
+    }
+  };
 
   const controls: Control[] = [
     {
@@ -92,12 +93,12 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
       onClick: toggleVideo,
       isActive: videoEnabled,
     },
-    // {
-    //   icon: () => <Share2 />,
-    //   variant: () => "outline",
-    //   onClick: copyIdToClipboard,
-    //   isTooltip: true,
-    // },
+    {
+      icon: () => <Share2 />,
+      variant: () => "outline",
+      onClick: copyIdToClipboard,
+      isTooltip: true,
+    },
     // {
     //   icon: () => <Airplay />,
     //   variant: (isOn: boolean) => (isOn ? "default" : "outline"),
@@ -130,6 +131,7 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
         {/* Local video */}
         <ParticipantCard
           hasVideo={videoEnabled}
+          hasMic={micEnabled}
           stream={localStream}
           name={username}
           muted={true}
@@ -141,8 +143,9 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
             key={participant.connectionId}
             name={participant.name}
             hasVideo={participant.videoEnabled}
-            muted={false}
+            hasMic={participant.micEnabled}
             stream={participant.stream}
+            muted={participant.micEnabled}
           />
         ))}
       </div>
