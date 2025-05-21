@@ -2,7 +2,7 @@ import {
   MessageSquare,
   Mic,
   MicOff,
-  PhoneOff,
+  PhoneOff, Share2,
   Video,
   VideoOff,
 } from "lucide-react";
@@ -47,7 +47,7 @@ type Control = {
   isTooltip?: boolean;
 };
 
-export default function MeetingArea({ activeTab, setActiveTab }: Props) {
+export default function MeetingArea({ activeTab, setActiveTab, roomId }: Props) {
   const [showCopiedTooltip, setShowCopiedTooltip] = useState(false);
   const navigate = useNavigate();
 
@@ -65,19 +65,19 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
     navigate("/");
   };
 
-  // const copyIdToClipboard = () => {
-  //   if (roomId) {
-  //     navigator.clipboard
-  //       .writeText(roomId)
-  //       .then(() => {
-  //         setShowCopiedTooltip(true);
-  //         setTimeout(() => setShowCopiedTooltip(false), 2000);
-  //       })
-  //       .catch((err) => {
-  //         console.error("Error copying Room ID:", err);
-  //       });
-  //   }
-  // };
+  const copyIdToClipboard = () => {
+    if (roomId) {
+      navigator.clipboard
+        .writeText(roomId)
+        .then(() => {
+          setShowCopiedTooltip(true);
+          setTimeout(() => setShowCopiedTooltip(false), 2000);
+        })
+        .catch((err) => {
+          console.error("Error copying Room ID:", err);
+        });
+    }
+  };
 
   const controls: Control[] = [
     {
@@ -92,12 +92,12 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
       onClick: toggleVideo,
       isActive: videoEnabled,
     },
-    // {
-    //   icon: () => <Share2 />,
-    //   variant: () => "outline",
-    //   onClick: copyIdToClipboard,
-    //   isTooltip: true,
-    // },
+    {
+      icon: () => <Share2 />,
+      variant: () => "outline",
+      onClick: copyIdToClipboard,
+      isTooltip: true,
+    },
     // {
     //   icon: () => <Airplay />,
     //   variant: (isOn: boolean) => (isOn ? "default" : "outline"),
@@ -130,9 +130,9 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
         {/* Local video */}
         <ParticipantCard
           hasVideo={videoEnabled}
+          hasMic={micEnabled}
           stream={localStream}
           name={username}
-          muted={true}
         />
 
         {/* Remote videos */}
@@ -141,7 +141,7 @@ export default function MeetingArea({ activeTab, setActiveTab }: Props) {
             key={participant.connectionId}
             name={participant.name}
             hasVideo={participant.videoEnabled}
-            muted={false}
+            hasMic={participant.micEnabled}
             stream={participant.stream}
           />
         ))}

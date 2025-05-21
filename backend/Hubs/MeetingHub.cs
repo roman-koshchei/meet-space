@@ -32,7 +32,25 @@ public class MeetingHub(MeetingHubData meetingHubData) : Hub
     public async Task SendVideoStatus(string roomId, bool enabled)
     {
         await Clients.OthersInGroup(roomId).SendAsync("ReceiveVideoStatus", Context.ConnectionId, enabled);
+        
+        if (meetingHubData.RoomUsers.TryGetValue(Context.ConnectionId, out var userRoom))
+        {
+            userRoom.VideoEnabled = enabled;
+            meetingHubData.RoomUsers[Context.ConnectionId] = userRoom;
+        }
     }
+    
+    public async Task SendMicStatus(string roomId, bool enabled)
+    {
+        await Clients.OthersInGroup(roomId).SendAsync("ReceiveMicStatus", Context.ConnectionId, enabled);
+        
+        if (meetingHubData.RoomUsers.TryGetValue(Context.ConnectionId, out var userRoom))
+        {
+            userRoom.MicEnabled = enabled;
+            meetingHubData.RoomUsers[Context.ConnectionId] = userRoom;
+        }
+    }
+
 
     // Chat
     public async Task SendMessage(string roomId, string message)
@@ -41,10 +59,10 @@ public class MeetingHub(MeetingHubData meetingHubData) : Hub
     }
 
     // Rooms
-    public async Task<RoomUser[]> ConnectToRoom(string roomId, string name)
+    public async Task<RoomUser[]> ConnectToRoom(string roomId, string name, bool micEnabled, bool videoEnabled)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
-        await Clients.OthersInGroup(roomId).SendAsync("UserJoinedRoom", Context.ConnectionId, name);
+        await Clients.OthersInGroup(roomId).SendAsync("UserJoinedRoom", Context.ConnectionId, name, micEnabled, videoEnabled);
 
         var othersUsers = meetingHubData.RoomUsers.Values.Where(x => x.RoomId == roomId).ToArray();
 
@@ -54,7 +72,9 @@ public class MeetingHub(MeetingHubData meetingHubData) : Hub
             {
                 ConnectionId = Context.ConnectionId,
                 Name = name,
-                RoomId = roomId
+                RoomId = roomId,
+                MicEnabled = micEnabled,
+                VideoEnabled = videoEnabled
             });
         }
 
