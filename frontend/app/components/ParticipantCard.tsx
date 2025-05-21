@@ -1,4 +1,4 @@
-import {Mic, MicOff} from "lucide-react";
+import { Mic, MicOff } from "lucide-react";
 import { use, useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { getColorByInitial, getInitials } from "~/helper";
@@ -60,10 +60,12 @@ export default function ParticipantCard({
       <div className="absolute bottom-0 inset-x-0 p-3 flex items-center justify-between z-10">
         <div className="flex items-center space-x-2">
           <span className="text-white font-medium text-sm px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm flex justify-center items-center gap-1 ">
-            <span>
-              {name}
-            </span>
-            {hasMic ? <Mic className="w-3.5 h-3.5" />: <MicOff className="w-3.5 h-3.5" />}
+            <span>{name}</span>
+            {hasMic ? (
+              <Mic className="w-3.5 h-3.5" />
+            ) : (
+              <MicOff className="w-3.5 h-3.5" />
+            )}
           </span>
         </div>
       </div>
