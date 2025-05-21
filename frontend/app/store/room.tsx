@@ -325,7 +325,9 @@ const createRoomStore = (hubUrl: string, roomId: string) => {
       }
 
       const sdp = new RTCSessionDescription(JSON.parse(sdpData));
-      await user.peerConnection.setRemoteDescription(sdp);
+      if (user.peerConnection.currentRemoteDescription == null) {
+        await user.peerConnection.setRemoteDescription(sdp);
+      }
       const answer = await user.peerConnection.createAnswer();
       await user.peerConnection.setLocalDescription(answer);
       await connection.send(
